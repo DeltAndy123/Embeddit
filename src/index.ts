@@ -3,7 +3,7 @@ import useragent from "express-useragent";
 import axios, {AxiosResponse} from "axios";
 import {RedditPostData, RedditPostListing} from "../types/reddit";
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const app = express();
 app.use(useragent.express());
