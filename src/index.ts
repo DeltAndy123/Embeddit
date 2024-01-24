@@ -25,15 +25,21 @@ function postToOptions(post: RedditPostData) {
 // (or http://localhost:3000/r/discordapp/comments/7j4c2v/how_to_make_my_website_appear_in_discord_embeds/)
 app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
   const { id } = req.params;
-  const data: AxiosResponse<RedditPostListing> = await axios.get(`https://api.reddit.com/api/info/?id=t3_${id}`);
-  const post = data.data.data.children[0].data;
-  switch (post.post_hint) {
-    case "image":
-      res.render("image", {
-        ...postToOptions(post),
-        image_url: post.url,
+  axios.get(`https://api.reddit.com/api/info/?id=t3_${id}`)
+      .then((response: AxiosResponse<RedditPostListing>) => {
+        const post = response.data.data.children[0].data;
+        switch (post.post_hint) {
+          case "image":
+            res.render("image", {
+              ...postToOptions(post),
+              image_url: post.url,
+            });
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
       });
-  }
 });
 
 app.listen(port, () => {
