@@ -1,9 +1,6 @@
 import { Request, Response } from "express";
-import axios, { AxiosResponse } from "axios";
-import { RedditPostListing, RedditSubredditListing, RedditUserListing } from "../types/reddit";
 import { formatNumber } from "./util";
-import { oauthClient } from "./db";
-import { USER_AGENT } from "./consts";
+import { getRedditData } from "./api";
 
 export function getStatuses(req: Request, res: Response): void {
   const rawId = req.params.id;
@@ -21,19 +18,9 @@ export function getStatuses(req: Request, res: Response): void {
 }
 
 async function redditPost(id: string, req: Request, res: Response): Promise<void> {
-  const postResponse: AxiosResponse<RedditPostListing> = await axios.get(`https://oauth.reddit.com/api/info/?id=t3_${id}&raw_json=1`, {
-    headers: {
-      "Authorization": "Bearer " + await oauthClient.getAccessToken(),
-      "User-Agent": USER_AGENT
-    }
-  });
+  const postResponse = await getRedditData(`/api/info/?id=t3_${id}&raw_json=1`);
   const post = postResponse.data.data.children[0].data;
-  const subredditResponse: AxiosResponse<RedditSubredditListing> = await axios.get(`https://oauth.reddit.com/r/${post.subreddit}/about?raw_json=1`, {
-    headers: {
-      "Authorization": "Bearer " + await oauthClient.getAccessToken(),
-      "User-Agent": USER_AGENT
-    }
-  });
+  const subredditResponse = await getRedditData(`/r/${post.subreddit}/about?raw_json=1`);
   const subreddit = subredditResponse.data.data;
 
   const json: {[key: string]: any} = { // TODO: Define a proper type for this
@@ -60,7 +47,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     media_attachments: []
   };
 
-  let footer = `<br><br><b><a href="https://reddit.com${post.permalink}">⬆️</a> ${formatNumber(post.score)} • <a href="https://reddit.com${post.permalink}">💬</a> ${formatNumber(post.num_comments)}`;
+  let footer = `<b><a href="https://reddit.com${post.permalink}">⬆️</a> ${formatNumber(post.score)} • <a href="https://reddit.com${post.permalink}">💬</a> ${formatNumber(post.num_comments)}`;
   // Length in Discord embed is based on the text itself, not including HTML tags
   let footerLength = "⬆️  • 💬 ".length + post.score.toString().length + post.num_comments.toString().length;
 
@@ -162,12 +149,12 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
   const maxBodyLength = 1100 - footerLength; // Limit character length before Discord cuts it off so we have room for the footer
 
   const selftext_html = post.selftext_html
-    ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
+    ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
 
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>
 ${selftext_html ? `<br><br>${selftext_html}` : ""}`;
   if (json.content.length > maxBodyLength) {
-    json.content = json.content.slice(0, maxBodyLength) + "…"; // Truncate if too long
+    json.content = json.content.slice(0, maxBodyLength) + "…<br><br>"; // Truncate if too long
   }
   json.content += footer;
 

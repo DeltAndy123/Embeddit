@@ -1,10 +1,10 @@
 import express from "express";
 import useragent from "express-useragent";
-import axios, {AxiosResponse} from "axios";
-import {RedditPostData, RedditPostListing} from "../types/reddit";
-import {getStatuses} from "./richembed";
-import {oauthClient} from "./db";
-import {SERVER_BASE, USER_AGENT} from "./consts";
+import { RedditPostData, RedditPostListing } from "../types/reddit";
+import { getStatuses } from "./richembed";
+import { SERVER_BASE } from "./consts";
+import { getRedditData } from "./api";
+import { AxiosResponse } from "axios";
 
 const port = process.env.PORT || 3000;
 
@@ -35,12 +35,7 @@ app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
   console.log("Reddit post request from", req.useragent?.source);
 
   const { id } = req.params;
-  axios.get(`https://oauth.reddit.com/api/info/?id=t3_${id}&raw_json=1`, {
-      headers: {
-        "Authorization": "Bearer " + await oauthClient.getAccessToken(),
-        "User-Agent": USER_AGENT
-      }
-    })
+  getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
       .then((response: AxiosResponse<RedditPostListing>) => {
         const post = response.data.data.children[0].data;
         res.render("embed", {
