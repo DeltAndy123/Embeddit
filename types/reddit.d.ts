@@ -16,14 +16,15 @@ interface MediaEmbed {
   scrolling: boolean,
 }
 interface ApiVideo {
-  width: number,
-  height: number,
-  fallback_url: string,
-  dash_url: string,
-  hls_url: string,
-  scrubber_media_url: string,
-  duration: number,
   bitrate_kbps: number,
+  fallback_url: string,
+  has_audio: boolean,
+  height: number,
+  width: number,
+  scrubber_media_url: string,
+  dash_url: string,
+  duration: number,
+  hls_url: string,
   is_gif: boolean,
   transcoding_status: string,
 }
@@ -31,6 +32,11 @@ interface ApiImage {
   url: string;
   width: number;
   height: number;
+}
+interface ApiMediaMetadata { // Not actually metadata, basically same as ApiImage but with single char keys
+  u: string; // URL
+  x: number; // Width
+  y: number; // Height
 }
 
 
@@ -87,7 +93,9 @@ export interface RedditPostData {
   link_flair_text_color: string;
   link_flair_type: string;
   likes: null;
-  media: null;
+  media: null | {
+    reddit_video: ApiVideo,
+  };
   media_embed: MediaEmbed;
   media_only: boolean;
   mod_note: null | string;
@@ -99,11 +107,22 @@ export interface RedditPostData {
   num_comments: number;
   num_crossposts: number;
   num_reports: null | number;
+  media_metadata?: {
+    [key: string]: {
+      status: "valid" | "invalid" | "deleted";
+      e: "Image" | "AnimatedImage" | "Video";
+      /** MIME type */
+      m: string;
+      p: ApiMediaMetadata[]; // Previews
+      s: ApiMediaMetadata; // Source
+      id: string;
+    }
+  }
   over_18: boolean;
   parent_whitelist_status: string;
   permalink: string;
   pinned: boolean;
-  post_hint: string;
+  post_hint?: string;
   preview: {
     images: {
       source: ApiImage;
@@ -138,12 +157,14 @@ export interface RedditPostData {
   report_reasons: null | string;
   saved: boolean;
   score: number;
-  secure_media: null;
+  secure_media: {
+    reddit_video: ApiVideo,
+  };
   secure_media_embed: MediaEmbed | {
     reddit_video: ApiVideo,
   };
   selftext: string;
-  selftext_html: string;
+  selftext_html: string | null;
   send_replies: boolean;
   spoiler: boolean;
   stickied: boolean;
@@ -169,6 +190,241 @@ export interface RedditPostData {
   wls: number;
 }
 
+interface ActiveRedditUserData {
+  is_suspended: false;
+
+  is_employee: boolean;
+  has_visited_new_profile: boolean;
+  is_friend: boolean;
+  pref_no_profanity: boolean;
+  has_external_account: boolean;
+  pref_geopopular: string;
+  pref_show_trending: boolean;
+  subreddit: {
+    default_set: boolean;
+    user_is_contributor: boolean;
+    banner_img: string;
+    allowed_media_in_comments: any[];
+    user_is_banned: boolean;
+    free_form_reports: boolean;
+    community_icon: string | null;
+    show_media: boolean;
+    icon_color: string;
+    user_is_muted: boolean | null;
+    display_name: string;
+    header_img: string | null;
+    title: string;
+    coins: number;
+    previous_names: string[];
+    over_18: boolean;
+    icon_size: [number, number];
+    primary_color: string;
+    icon_img: string;
+    description: string;
+    submit_link_label: string;
+    header_size: [number, number] | null;
+    restrict_posting: boolean;
+    restrict_commenting: boolean;
+    subscribers: number;
+    submit_text_label: string;
+    is_default_icon: boolean;
+    link_flair_position: string;
+    display_name_prefixed: string;
+    key_color: string;
+    name: string;
+    is_default_banner: boolean;
+    url: string;
+    quarantine: boolean;
+    banner_size: [number, number] | null;
+    user_is_moderator: boolean;
+    accept_followers: boolean;
+    public_description: string;
+    link_flair_enabled: boolean;
+    disable_contributor_requests: boolean;
+    subreddit_type: string;
+    user_is_subscriber: boolean;
+  };
+  pref_show_presence: boolean;
+  snoovatar_img: string;
+  snoovatar_size: [number, number];
+  gold_expiration: number | null;
+  has_gold_subscription: boolean;
+  is_sponsor: boolean;
+  num_friends: number;
+  features: {
+    [key: string]: boolean | {
+      owner: string;
+      variant: string;
+      experiment_id: number;
+    };
+  };
+  can_edit_name: boolean;
+  is_blocked: boolean;
+  verified: boolean;
+  new_modmail_exists: boolean;
+  pref_autoplay: boolean;
+  coins: number;
+  has_paypal_subscription: boolean;
+  has_subscribed_to_premium: boolean;
+  id: string;
+  can_create_subreddit: boolean;
+  over_18: boolean;
+  is_gold: boolean;
+  is_mod: boolean;
+  awarder_karma: number;
+  suspension_expiration_utc: number | null;
+  has_stripe_subscription: boolean;
+  pref_video_autoplay: boolean;
+  in_chat: boolean;
+  has_android_subscription: boolean;
+  in_redesign_beta: boolean;
+  icon_img: string;
+  has_mod_mail: boolean;
+  pref_nightmode: boolean;
+  awardee_karma: number;
+  hide_from_robots: boolean;
+  password_set: boolean;
+  modhash: string;
+  link_karma: number;
+  force_password_reset: boolean;
+  total_karma: number;
+  inbox_count: number;
+  pref_top_karma_subreddits: boolean;
+  has_mail: boolean;
+  pref_show_snoovatar: boolean;
+  name: string;
+  pref_clickgadget: number;
+  created: number;
+  has_verified_email: boolean;
+  gold_creddits: number;
+  created_utc: number;
+  has_ios_subscription: boolean;
+  pref_show_twitter: boolean;
+  in_beta: boolean;
+  comment_karma: number;
+  accept_followers: boolean;
+  has_subscribed: boolean;
+}
+
+interface SuspendedRedditUserData {
+  is_suspended: true;
+
+  name: string;
+  awardee_karma: 0;
+  awarder_karma: 0;
+  is_blocked: boolean;
+  total_karma: 0;
+}
+
+export type RedditUserData = ActiveRedditUserData | SuspendedRedditUserData;
+
+export interface SubredditData {
+  user_flair_background_color: string | null;
+  submit_text_html: string;
+  restrict_posting: boolean;
+  user_is_banned: boolean;
+  free_form_reports: boolean;
+  wiki_enabled: boolean | null;
+  user_is_muted: boolean;
+  user_can_flair_in_sr: boolean | null;
+  display_name: string;
+  header_img: string | null;
+  title: string;
+  allow_galleries: boolean;
+  icon_size: number | null;
+  primary_color: string;
+  active_user_count: number;
+  icon_img: string;
+  display_name_prefixed: string;
+  accounts_active: number;
+  public_traffic: boolean;
+  subscribers: number;
+  user_flair_richtext: RichFlair[];
+  videostream_links_count: number;
+  name: string;
+  quarantine: boolean;
+  hide_ads: boolean;
+  prediction_leaderboard_entry_type: number;
+  emojis_enabled: boolean;
+  advertiser_category: string;
+  public_description: string;
+  comment_score_hide_mins: number;
+  allow_predictions: boolean;
+  user_has_favorited: boolean;
+  user_flair_template_id: string | null;
+  community_icon: string;
+  banner_background_image: string;
+  original_content_tag_enabled: boolean;
+  community_reviewed: boolean;
+  submit_text: string;
+  description_html: string;
+  spoilers_enabled: boolean;
+  comment_contribution_settings: {
+    allowed_media_types: string[];
+  };
+  allow_talks: boolean;
+  header_size: number | null;
+  user_flair_position: string;
+  all_original_content: boolean;
+  has_menu_widget: boolean;
+  is_enrolled_in_new_modmail: boolean | null;
+  key_color: string;
+  can_assign_user_flair: boolean;
+  created: number;
+  wls: number;
+  show_media_preview: boolean;
+  submission_type: string;
+  user_is_subscriber: boolean;
+  allowed_media_in_comments: string[];
+  allow_videogifs: boolean;
+  should_archive_posts: boolean;
+  user_flair_type: string;
+  allow_polls: boolean;
+  collapse_deleted_comments: boolean;
+  emojis_custom_size: number | null;
+  public_description_html: string;
+  allow_videos: boolean;
+  is_crosspostable_subreddit: boolean;
+  notification_level: string | null;
+  should_show_media_in_comments_setting: boolean;
+  can_assign_link_flair: boolean;
+  accounts_active_is_fuzzed: boolean;
+  allow_prediction_contributors: boolean;
+  submit_text_label: string;
+  link_flair_position: string;
+  user_sr_flair_enabled: boolean;
+  user_flair_enabled_in_sr: boolean;
+  allow_discovery: boolean;
+  accept_followers: boolean;
+  user_sr_theme_enabled: boolean;
+  link_flair_enabled: boolean;
+  disable_contributor_requests: boolean;
+  subreddit_type: string;
+  suggested_comment_sort: string | null;
+  banner_img: string;
+  user_flair_text: string | null;
+  banner_background_color: string;
+  show_media: boolean;
+  id: string;
+  user_is_moderator: boolean;
+  over18: boolean;
+  header_title: string;
+  description: string;
+  submit_link_label: string;
+  user_flair_text_color: string | null;
+  restrict_commenting: boolean;
+  user_flair_css_class: string | null;
+  allow_images: boolean;
+  lang: string;
+  url: string;
+  created_utc: number;
+  banner_size: [number, number];
+  mobile_banner_image: string;
+  user_is_contributor: boolean;
+  allow_predictions_tournament: boolean;
+}
+
+
 export interface RedditPostListing {
   kind: "Listing";
   data: {
@@ -182,4 +438,14 @@ export interface RedditPostListing {
     after: any;
     before: any;
   };
+}
+
+export interface RedditUserListing {
+  kind: "t2";
+  data: RedditUserData;
+}
+
+export interface RedditSubredditListing {
+  kind: "t5";
+  data: SubredditData;
 }

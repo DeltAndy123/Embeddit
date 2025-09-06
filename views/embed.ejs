@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta property="og:site_name" content="Embeddit" />
+    <meta property="theme-color" content="#ff4400" />
+    <meta property="twitter:card" content="player" />
+
+    <link href='<%= server_base %>/logos/reddit.svg' rel='icon' sizes='svgxsvg' type='image/svg+xml'>
+    <link href='<%= server_base %>/logos/reddit64.png' rel='icon' sizes='64x64' type='image/png'>
+    <link href='<%= server_base %>/logos/reddit48.png' rel='icon' sizes='48x48' type='image/png'>
+    <link href='<%= server_base %>/logos/reddit32.png' rel='icon' sizes='32x32' type='image/png'>
+    <link href='<%= server_base %>/logos/reddit24.png' rel='icon' sizes='24x24' type='image/png'>
+    <link href='<%= server_base %>/logos/reddit16.png' rel='icon' sizes='16x16' type='image/png'>
+
+
+    <link rel="canonical" href="<%= permalink %>" />
+    <meta property="og:url" content="<%= permalink %>" />
+    <meta http-equiv="refresh" content="0;url=<%= permalink %>" />
+
+    <meta property="twitter:site" content="u/<%= author %>" />
+    <meta property="twitter:creator" content="u/<%= author %>" />
+    <meta property="twitter:title" content="u/<%= author %> (@ <%= subreddit %>)" />
+    <meta property="og:title" content="u/<%= author %> (@ <%= subreddit %>)" />
+    
+    <meta property="og:description" content="The countdown is on!
+
+Join us in 48 hours for a special announcement about Hollow Knight: Silksong!
+
+Premiering here: https://youtu.be/6XGeJwsUP9c" />
+    
+<!-- <link rel="alternate"
+        href="https://fxtwitter.com/owoembed?text=%F0%9F%92%AC%204.4K%20%20%20%F0%9F%94%81%2033.4K%20%20%20%E2%9D%A4%EF%B8%8F%20136.7K%20%20%20%F0%9F%91%81%EF%B8%8F%2020.90M&status=1957812884773433667&author=TeamCherryGames&provider=%F0%9F%92%AC%204.4K%20%20%20%F0%9F%94%81%2033.4K%20%20%20%E2%9D%A4%EF%B8%8F%20136.7K%20%20%20%F0%9F%91%81%EF%B8%8F%2020.90M"
+        type="application/json+oembed" title="u/<%= author %> (@ <%= subreddit %>)"> -->
+
+    <link href="<%= server_base %>/users/0/statuses/t3<%= postId %>"
+        rel="alternate" type="application/activity+json">
+</head>
+
+<body></body>
+
+</html>
