@@ -52,6 +52,9 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
   let footerLength = "⬆️  • 💬 ".length + post.score.toString().length + post.num_comments.toString().length;
 
 
+  json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
+
+
   if (post.post_hint === "image") {
     // Single image post (use for loop anyway just in case)
     for (const image of post.preview?.images || []) {
@@ -145,14 +148,18 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     footerLength += " • Embedded Videos Have No Audio".length;
   }
 
+  if (post.post_hint === "link") {
+    // Link post
+    json.content += `<br><br><a href="${post.url}">${post.url}</a>`;
+  }
+
   footer += "</b>";
   const maxBodyLength = 1100 - footerLength; // Limit character length before Discord cuts it off so we have room for the footer
 
   const selftext_html = post.selftext_html
     ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
 
-  json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>
-${selftext_html ? `<br><br>${selftext_html}` : "<br><br>"}`;
+  json.content += `${selftext_html ? `<br><br>${selftext_html}` : "<br><br>"}`;
   if (json.content.length > maxBodyLength) {
     json.content = json.content.slice(0, maxBodyLength) + "…<br><br>"; // Truncate if too long
   }
