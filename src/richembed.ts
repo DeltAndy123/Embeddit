@@ -152,7 +152,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
 
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>
-${selftext_html ? `<br><br>${selftext_html}` : ""}`;
+${selftext_html ? `<br><br>${selftext_html}` : "<br><br>"}`;
   if (json.content.length > maxBodyLength) {
     json.content = json.content.slice(0, maxBodyLength) + "…<br><br>"; // Truncate if too long
   }
