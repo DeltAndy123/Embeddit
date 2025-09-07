@@ -8,7 +8,7 @@ export const oauth = {
 
 if (process.env.DONT_USE_OAUTH) {
   console.log("OAuth is disabled; using public Reddit API");
-  console.warn("Note: The public API is rate-limited and IP-limited. Use OAuth for production environments.");
+  console.warn("Note: The public API is rate-limited and blocks a lot of commercial VPS IPs. Use OAuth for production environments.");
 } else {
   if (!process.env.REDDIT_CLIENT_ID) {
     throw new Error("REDDIT_CLIENT_ID environment variable not set");
