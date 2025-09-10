@@ -87,9 +87,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
         description: post.title
       });
     }
-  }
-
-  if (post.media_metadata) {
+  } else if (post.media_metadata) {
     // Gallery post
     for (const key in post.media_metadata) {
       const media = post.media_metadata[key];
@@ -121,9 +119,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
         });
       }
     }
-  }
-
-  if (post.post_hint === "hosted:video" && post.media?.reddit_video) {
+  } else if (post.post_hint === "hosted:video" && post.media?.reddit_video) {
     // Video post
     const video = post.media.reddit_video;
     json.media_attachments.push({
@@ -146,9 +142,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     });
     footer += " • <i>Embedded Videos Have No Audio</i>";
     footerLength += " • Embedded Videos Have No Audio".length;
-  }
-
-  if (post.post_hint === "link") {
+  } else if (post.post_hint === "link" || post.url) {
     // Link post
     json.content += `<br><br><a href="${post.url}">${post.url}</a>`;
   }

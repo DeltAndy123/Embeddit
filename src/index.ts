@@ -32,22 +32,26 @@ function postToOptions(post: RedditPostData) {
 // https://www.reddit.com/r/discordapp/comments/7j4c2v/how_to_make_my_website_appear_in_discord_embeds/
 // (or http://localhost:3000/r/discordapp/comments/7j4c2v/how_to_make_my_website_appear_in_discord_embeds/)
 app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
-  console.log("Reddit post request from", req.useragent?.source);
+  if (req.useragent?.isBot) {
+    console.log("Reddit post request from", req.useragent?.source);
 
-  const { id } = req.params;
-  getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
-      .then((response: AxiosResponse<RedditPostListing>) => {
-        const post = response.data.data.children[0].data;
-        res.render("embed", {
-          ...postToOptions(post),
-          image_url: post.url,
-          server_base: SERVER_BASE
+    const { id } = req.params;
+    getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
+        .then((response: AxiosResponse<RedditPostListing>) => {
+          const post = response.data.data.children[0].data;
+          res.render("embed", {
+            ...postToOptions(post),
+            image_url: post.url,
+            server_base: SERVER_BASE
+          });
+        })
+        .catch((error) => {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
         });
-      })
-      .catch((error) => {
-        console.error(error);
-        res.status(500).send("Internal Server Error");
-      });
+  } else {
+    res.redirect(`https://reddit.com${req.path}`);
+  }
 });
 
 // Spoof as a Mastodon post so Discord allows rich embeds instead of normal links
