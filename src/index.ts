@@ -3,7 +3,7 @@ import useragent from "express-useragent";
 import { RedditPostData, RedditPostListing } from "../types/reddit";
 import { getStatuses } from "./richembed";
 import { SERVER_BASE } from "./consts";
-import { getRedditData } from "./api";
+import { getRedditData, resolveShareLink } from "./api";
 import { AxiosResponse } from "axios";
 
 const port = process.env.PORT || 3000;
@@ -53,6 +53,46 @@ app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
     res.redirect(`https://reddit.com${req.path}`);
   }
 });
+
+// Reddit share (/s/) URLs (https://reddit.com/r/[subreddit]/s/[id])
+app.get("/r/:subreddit/s/:id", async (req, res) => {
+  if (req.useragent?.isBot) {
+    console.log("Reddit share link request from", req.useragent?.source);
+
+    const { subreddit, id } = req.params;
+    resolveShareLink(subreddit, id)
+        .then((url) => {
+          if (!url) {
+            res.status(404).send("Not Found");
+            return;
+          }
+          const postId = new URL(url).pathname.split("/")[4];
+          // Use same logic as above
+          getRedditData(`/api/info/?id=t3_${postId}&raw_json=1`)
+              .then((response: AxiosResponse<RedditPostListing>) => {
+                const post = response.data.data.children[0].data;
+                res.render("embed", {
+                  ...postToOptions(post),
+                  image_url: post.url,
+                  server_base: SERVER_BASE
+                });
+              })
+              .catch((error) => {
+                console.error(error);
+                res.status(500).send("Internal Server Error");
+              });
+        })
+        .catch((error) => {
+          console.error(error);
+          res.status(500).send("Internal Server Error");
+        });
+
+    
+  } else {
+    res.redirect(`https://reddit.com${req.path.replace("/s/", "/comments/")}`);
+  }
+});
+
 
 // Spoof as a Mastodon post so Discord allows rich embeds instead of normal links
 // http://localhost:3000/users/TeamCherryGames/statuses/66086667665361575960535460605659595556555558585966

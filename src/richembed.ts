@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { formatNumber } from "./util";
 import { getRedditData } from "./api";
+import { RedditPostListing, RedditSubredditListing } from "../types/reddit";
 
 export function getStatuses(req: Request, res: Response): void {
   const rawId = req.params.id;
@@ -18,12 +19,12 @@ export function getStatuses(req: Request, res: Response): void {
 }
 
 async function redditPost(id: string, req: Request, res: Response): Promise<void> {
-  const postResponse = await getRedditData(`/api/info/?id=t3_${id}&raw_json=1`);
+  const postResponse = await getRedditData<RedditPostListing>(`/api/info/?id=t3_${id}&raw_json=1`);
   const post = postResponse.data.data.children[0].data;
-  const subredditResponse = await getRedditData(`/r/${post.subreddit}/about?raw_json=1`);
+  const subredditResponse = await getRedditData<RedditSubredditListing>(`/r/${post.subreddit}/about?raw_json=1`);
   const subreddit = subredditResponse.data.data;
 
-  const json: {[key: string]: any} = { // TODO: Define a proper type for this
+  const json: Record<string, any> = { // TODO: Define a proper type for this
     id: req.params.id,
     url: "https://reddit.com" + post.permalink,
     uri: "https://reddit.com" + post.permalink,
@@ -47,7 +48,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     media_attachments: []
   };
 
-  let footer = `<b><a href="https://reddit.com${post.permalink}">⬆️</a> ${formatNumber(post.score)} • <a href="https://reddit.com${post.permalink}">💬</a> ${formatNumber(post.num_comments)}`;
+  let footer = `</a><b>⬆️ ${formatNumber(post.score)} • 💬 ${formatNumber(post.num_comments)}`;
   // Length in Discord embed is based on the text itself, not including HTML tags
   let footerLength = "⬆️  • 💬 ".length + post.score.toString().length + post.num_comments.toString().length;
 
@@ -142,20 +143,28 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
     });
     footer += " • <i>Embedded Videos Have No Audio</i>";
     footerLength += " • Embedded Videos Have No Audio".length;
-  } else if (post.post_hint === "link" || post.url) {
+  } else if (post.post_hint === "link" || post.domain !== `self.${post.subreddit}`) {
     // Link post
     json.content += `<br><br><a href="${post.url}">${post.url}</a>`;
   }
 
   footer += "</b>";
-  const maxBodyLength = 1100 - footerLength; // Limit character length before Discord cuts it off so we have room for the footer
+  const maxBodyLength = 1098 - footerLength; // Limit character length before Discord cuts it off so we have room for the footer
 
   const selftext_html = post.selftext_html
     ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
 
   json.content += `${selftext_html ? `<br><br>${selftext_html}` : "<br><br>"}`;
   if (json.content.length > maxBodyLength) {
-    json.content = json.content.slice(0, maxBodyLength) + "…<br><br>"; // Truncate if too long
+    // Truncate and remove any incomplete HTML tag at the end
+    let truncated = json.content.slice(0, maxBodyLength);
+    const lastOpenBracket = truncated.lastIndexOf('<');
+    const lastCloseBracket = truncated.lastIndexOf('>');
+    if (lastOpenBracket > lastCloseBracket) {
+      // Remove incomplete tag
+      truncated = truncated.slice(0, lastOpenBracket);
+    }
+    json.content = truncated + "…</a></b><br><br>"; // Truncate if too long
   }
   json.content += footer;
 
