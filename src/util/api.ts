@@ -2,6 +2,7 @@ import axios from "axios";
 import { oauth } from "../redditClient";
 import { USER_AGENT } from "../consts";
 import { getFromCache, setInCache } from "./cache";
+import { logger } from "./log";
 
 export async function getRedditData<T = any>(endpoint: string) {
   if (oauth.enabled && oauth.client) {
@@ -25,7 +26,7 @@ export async function resolveShareLink(subreddit: string, id: string, stripTrack
   const cacheKey = `${subreddit}:${id}`;
   const cachedValue = getFromCache(cacheKey);
   if (cachedValue) {
-    console.log("[DEBUG] Cache hit for", cacheKey, "->", cachedValue);
+    logger.debug("Cache hit for", cacheKey, "->", cachedValue);
     return cachedValue;
   }
 

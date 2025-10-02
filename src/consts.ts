@@ -13,3 +13,4 @@ if (process.env.SERVER_BASE.startsWith("http://localhost") || process.env.SERVER
 }
 export const SERVER_BASE = process.env.SERVER_BASE;
 export const CACHE_MAX_ENTRIES = process.env.CACHE_MAX_ENTRIES ? parseInt(process.env.CACHE_MAX_ENTRIES) : 10000;
+export const DEBUG = !!process.env.DEBUG;

@@ -1,4 +1,5 @@
-import axios, {AxiosResponse} from "axios";
+import axios, { AxiosResponse } from "axios";
+import { logger } from "./log";
 
 export class OAuthClient {
   public readonly clientId: string;
@@ -36,7 +37,7 @@ export class OAuthClient {
     this.tokenExpireTime = Date.now() + (response.data.expires_in - 300) * 1000;
     this.accessToken = response.data.access_token;
 
-    console.log("[DEBUG] Generated new access token, expires at " + new Date(this.tokenExpireTime).toISOString())
+    logger.info("Refreshed access token, expires at " + new Date(this.tokenExpireTime).toISOString())
 
     return this.accessToken;
   }
