@@ -1,9 +1,9 @@
 import express from "express";
 import useragent from "express-useragent";
 import { RedditPostData, RedditPostListing } from "../types/reddit";
-import { getStatuses } from "./richembed";
+import { getStatuses } from "./richEmbed";
 import { SERVER_BASE } from "./consts";
-import { getRedditData, resolveShareLink } from "./api";
+import { getRedditData, resolveShareLink } from "./util/api";
 import { AxiosResponse } from "axios";
 
 const port = process.env.PORT || 3000;

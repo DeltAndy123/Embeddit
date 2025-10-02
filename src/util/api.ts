@@ -1,6 +1,7 @@
 import axios from "axios";
-import { oauth } from "./db";
-import { USER_AGENT } from "./consts";
+import { oauth } from "../redditClient";
+import { USER_AGENT } from "../consts";
+import { getFromCache, setInCache } from "./cache";
 
 export async function getRedditData<T = any>(endpoint: string) {
   if (oauth.enabled && oauth.client) {
@@ -21,6 +22,13 @@ export async function getRedditData<T = any>(endpoint: string) {
 
 // Share links are https://reddit.com/r/[subreddit]/s/[id] and contain tracking parameters
 export async function resolveShareLink(subreddit: string, id: string, stripTrackingParams: boolean = true): Promise<string | null> {
+  const cacheKey = `${subreddit}:${id}`;
+  const cachedValue = getFromCache(cacheKey);
+  if (cachedValue) {
+    console.log("[DEBUG] Cache hit for", cacheKey, "->", cachedValue);
+    return cachedValue;
+  }
+
   const headers: Record<string, string> = {
     "User-Agent": USER_AGENT
   };
@@ -40,5 +48,8 @@ export async function resolveShareLink(subreddit: string, id: string, stripTrack
   urlObj.searchParams.delete("utm_name");
   urlObj.searchParams.delete("utm_source");
   urlObj.searchParams.delete("utm_term");
+
+  setInCache(cacheKey, urlObj.toString());
+
   return urlObj.toString();
 }

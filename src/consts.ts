@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-export const USER_AGENT = "backend:embeddit:1.0.0 (by /u/DeltAndy)";
+export const USER_AGENT = "backend:embeddit:1.1.0 (by /u/DeltAndy)";
 
 if (!process.env.SERVER_BASE) {
   throw new Error("SERVER_BASE environment variable not set");
@@ -12,3 +12,4 @@ if (process.env.SERVER_BASE.startsWith("http://localhost") || process.env.SERVER
   throw new Error("SERVER_BASE must not be a local URL, as Discord cannot fetch these. You must port forward and use your public IP address.")
 }
 export const SERVER_BASE = process.env.SERVER_BASE;
+export const CACHE_MAX_ENTRIES = process.env.CACHE_MAX_ENTRIES ? parseInt(process.env.CACHE_MAX_ENTRIES) : 10000;

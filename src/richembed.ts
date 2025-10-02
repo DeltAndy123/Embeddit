@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { formatNumber } from "./util";
-import { getRedditData } from "./api";
+import { formatNumber } from "./util/num";
+import { getRedditData } from "./util/api";
 import { RedditPostListing, RedditSubredditListing } from "../types/reddit";
 
 export function getStatuses(req: Request, res: Response): void {

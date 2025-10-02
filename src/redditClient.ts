@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { OAuthClient } from "./oauth";
+import { OAuthClient } from "./util/oauth";
 
 export const oauth = {
   enabled: !process.env.DONT_USE_OAUTH,
