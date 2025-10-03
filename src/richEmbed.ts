@@ -172,7 +172,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
   const scoreFormatted = formatNumber(post.score);
   const commentsFormatted = formatNumber(post.num_comments);
 
-  let footer = `<b>⬆️ ${scoreFormatted} • 💬 ${commentsFormatted}`;
+  let footer = `<div><b>⬆️ ${scoreFormatted} • 💬 ${commentsFormatted}`;
   // Length in Discord embed is based on the text itself, not including HTML tags
   let footerLength = "⬆️  • 💬 ".length + scoreFormatted.length + commentsFormatted.length;
 
@@ -191,7 +191,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
   // Body (selftext)
   const selftext_html = post.selftext_html
     ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
-  json.content += selftext_html ? `<br><br>${selftext_html}` : "<br><br>";
+  json.content += selftext_html ? `<br/><br/><div>${selftext_html}` : "";
 
 
   // Truncate if too much text
@@ -203,11 +203,14 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
       // Remove incomplete tag
       truncated = truncated.slice(0, lastOpenBracket);
     }
-    json.content = truncated + "…</a></strong></blockquote></li></ul></ol><br><br>"; // Truncate if too long
+    json.content = truncated + "…</b></a></strong></blockquote></li></ul></ol>"; // Truncate if too long
   }
 
+  json.content += "</div>";
+
   // Footer
-  json.content += footer;
+  footer += "</div>";
+  json.content += `<br/><br/>${footer}`;
 
   res.json(json);
 }
@@ -295,7 +298,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
 
   const postScoreFormatted = formatNumber(post.score);
   const postCommentsFormatted = formatNumber(post.num_comments);
-  let postFooter = `<br/><br/><div><b>⬆️ ${postScoreFormatted} • 💬 ${postCommentsFormatted}`;
+  let postFooter = `<div><b>⬆️ ${postScoreFormatted} • 💬 ${postCommentsFormatted}`;
   let postFooterLength = "⬆️  • 💬 ".length + postScoreFormatted.length + postCommentsFormatted.length;
 
   const postSelftextHtml = post.selftext_html
@@ -304,11 +307,12 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   // Title
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
 
-  let maxBodyLength = 700 - post.title.length - commentFooterLength - postFooterLength;
+  let maxBodyLength = 700 - (1.35 * post.title.length) - commentFooterLength - postFooterLength;
 
   let body_html = comment.body_html
       ?.slice("<div class=\"md\">".length, -"\n</div>".length);
 
+  let bodyLength = body_html.length;
   // Truncate comment body if too much text
   if (body_html.length > maxBodyLength) {
     let truncated = body_html.slice(0, maxBodyLength);
@@ -318,9 +322,15 @@ async function redditComment(commentId: string, postId: string, req: Request, re
       // Remove incomplete tag
       truncated = truncated.slice(0, lastOpenBracket);
     }
-    body_html = truncated + "…</a></strong></blockquote></li></ul></ol>";
+    let append = "…</b></a></strong></li></ul></ol>";
+    if (truncated.includes("<blockquote>") && !truncated.includes("</blockquote>")) {
+      // Only append a closing blockquote if needed for comments to not put footer outside of blockquote
+      append = "…</b></a></strong></blockquote></li></ul></ol>";
+    }
+    body_html = truncated + append;
+    bodyLength = truncated.length + 1;
   }
-  const commentLength = body_html.length + commentFooterLength + `Comment by u/${comment.author}`.length;
+  const commentLength = bodyLength + commentFooterLength + `Comment by u/${comment.author}`.length;
 
   // Extra info (images, video, link)
   const extraPostInfo = getExtraPostInfo(post);
@@ -329,10 +339,10 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   postFooter += extraPostInfo.appendFooter;
   postFooterLength += extraPostInfo.footerLengthIncrease;
 
-  const maxSelftextLength = 955 - postFooterLength - commentLength;
+  const maxSelftextLength = 865 - postFooterLength - commentLength;
 
   // Post body (selftext)
-  json.content += postSelftextHtml ? `<br/><br/><div>${postSelftextHtml}</div>` : "";
+  json.content += postSelftextHtml ? `<br/><br/><div>${postSelftextHtml}` : "";
 
   // Truncate selftext if too much text
   if (json.content.length > maxSelftextLength) {
@@ -343,12 +353,12 @@ async function redditComment(commentId: string, postId: string, req: Request, re
       // Remove incomplete tag
       truncated = truncated.slice(0, lastOpenBracket);
     }
-    json.content = truncated + "…</a></strong></blockquote></li></ul></ol>"; // Truncate if too long
+    json.content = truncated + "…</b></a></strong></blockquote></li></ul></ol>"; // Truncate if too long
   }
 
-  // Footer
+  // Post footer
   postFooter += "</b></div>"
-  json.content += postFooter;
+  json.content += "</div><br/><br/>" + postFooter;
 
   // Comment body
   json.content += `<br/><br/><div><blockquote><b><a href="https://reddit.com${comment.permalink}">Comment by u/${comment.author}</a></b><br/><br/>${body_html}${commentFooter}</blockquote></div>`;
