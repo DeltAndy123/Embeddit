@@ -304,7 +304,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   // Title
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
 
-  let maxBodyLength = 800 - post.title.length - commentFooterLength - postFooterLength;
+  let maxBodyLength = 700 - post.title.length - commentFooterLength - postFooterLength;
 
   let body_html = comment.body_html
       ?.slice("<div class=\"md\">".length, -"\n</div>".length);
@@ -320,7 +320,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
     }
     body_html = truncated + "…</a></strong></blockquote></li></ul></ol>";
   }
-  const commentLength = body_html.length + commentFooterLength;
+  const commentLength = body_html.length + commentFooterLength + `Comment by u/${comment.author}`.length;
 
   // Extra info (images, video, link)
   const extraPostInfo = getExtraPostInfo(post);
@@ -329,7 +329,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   postFooter += extraPostInfo.appendFooter;
   postFooterLength += extraPostInfo.footerLengthIncrease;
 
-  const maxSelftextLength = 950 - postFooterLength - commentLength;
+  const maxSelftextLength = 955 - postFooterLength - commentLength;
 
   // Post body (selftext)
   json.content += postSelftextHtml ? `<br/><br/><div>${postSelftextHtml}</div>` : "";
