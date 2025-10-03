@@ -48,11 +48,11 @@ export interface RedditPostData {
   author: string;
   author_flair_background_color: string;
   author_flair_css_class: string;
-  author_flair_richtext: { e: string; t: string }[];
+  author_flair_richtext: ({ a: string, e: string, u: string } | { e: string; t: string })[];
   author_flair_template_id: null | string;
   author_flair_text: string;
   author_flair_text_color: string;
-  author_flair_type: string;
+  author_flair_type: null | string;
   author_fullname: string;
   author_is_blocked: boolean;
   author_patreon_flair: boolean;
@@ -154,7 +154,7 @@ export interface RedditPostData {
   removal_reason: null | string;
   removed_by: null | string;
   removed_by_category: null | string;
-  report_reasons: null | string;
+  report_reasons: null | string[];
   saved: boolean;
   score: number;
   secure_media: {
@@ -172,7 +172,7 @@ export interface RedditPostData {
   subreddit_id: string;
   subreddit_name_prefixed: string;
   subreddit_subscribers: number;
-  subreddit_type: string;
+  subreddit_type: "public" | "private" | "restricted" | "gold_restricted" | "archived";
   suggested_sort: null | string;
   thumbnail: string;
   thumbnail_height: null | number;
@@ -183,11 +183,83 @@ export interface RedditPostData {
   ups: number;
   upvote_ratio: number;
   url: string;
-  user_reports: any[]; // TODO: Adjust this type based on the actual structure
+  user_reports: (null | number)[][];
   visited: boolean;
   view_count: null;
   whitelist_status: string;
   wls: number;
+}
+
+export interface RedditCommentData {
+  subreddit_id: string;
+  approved_at_utc: null | number;
+  author_is_blocked: boolean;
+  comment_type: null | string;
+  edited: boolean;
+  mod_reason_by: null | string;
+  banned_by: null | string;
+  ups: number;
+  num_reports: null | number;
+  author_flair_type: null | string;
+  total_awards_received: number;
+  subreddit: string;
+  author_flair_template_id: null | string;
+  likes: null | number;
+  replies: string;
+  user_reports: (null | number)[][];
+  saved: boolean;
+  id: string;
+  banned_at_utc: null | number;
+  mod_reason_title: null | string;
+  gilded: number;
+  archived: boolean;
+  collapsed_reason_code: null | string;
+  no_follow: boolean;
+  author: string;
+  can_mod_post: boolean;
+  send_replies: boolean;
+  parent_id: string;
+  score: number;
+  author_fullname: string;
+  report_reasons: null | string[];
+  removal_reason: null | string;
+  approved_by: null | string;
+  all_awardings: never[];
+  body: string;
+  awarders: never[];
+  top_awarded_type: null | string;
+  downs: 0; // Reddit doesn't tell us downvotes
+  author_flair_css_class: null | string;
+  author_patreon_flair: boolean;
+  collapsed: boolean;
+  author_flair_richtext: ({ a: string, e: string, u: string } | { e: string; t: string })[];
+  is_submitter: boolean;
+  body_html: string;
+  gildings: {};
+  collapsed_reason: null | string;
+  associated_award: null | string;
+  stickied: boolean;
+  author_premium: boolean;
+  can_gild: boolean;
+  link_id: string;
+  unrepliable_reason: null | string;
+  author_flair_text_color: string;
+  score_hidden: boolean;
+  permalink: string;
+  subreddit_type: "public" | "private" | "restricted" | "gold_restricted" | "archived";
+  locked: boolean;
+  name: string;
+  created: number;
+  author_flair_text: null | string;
+  treatment_tags: any[]; // TODO: Adjust this type based on the actual structure
+  created_utc: number;
+  subreddit_name_prefixed: string;
+  controversiality: number;
+  author_flair_background_color: string;
+  collapsed_because_crowd_control: null;
+  mod_reports: any[]; // TODO: Adjust this type based on the actual structure
+  mod_note: null | string;
+  distinguished: null | string;
 }
 
 interface ActiveRedditUserData {
@@ -241,7 +313,7 @@ interface ActiveRedditUserData {
     public_description: string;
     link_flair_enabled: boolean;
     disable_contributor_requests: boolean;
-    subreddit_type: string;
+    subreddit_type: "public" | "private" | "restricted" | "gold_restricted" | "archived";
     user_is_subscriber: boolean;
   };
   pref_show_presence: boolean;
@@ -318,7 +390,7 @@ interface SuspendedRedditUserData {
 
 export type RedditUserData = ActiveRedditUserData | SuspendedRedditUserData;
 
-export interface SubredditData {
+export interface RedditSubredditData {
   user_flair_background_color: string | null;
   submit_text_html: string;
   restrict_posting: boolean;
@@ -399,7 +471,7 @@ export interface SubredditData {
   user_sr_theme_enabled: boolean;
   link_flair_enabled: boolean;
   disable_contributor_requests: boolean;
-  subreddit_type: string;
+  subreddit_type: "public" | "private" | "restricted" | "gold_restricted" | "archived";
   suggested_comment_sort: string | null;
   banner_img: string;
   user_flair_text: string | null;
@@ -424,6 +496,22 @@ export interface SubredditData {
   allow_predictions_tournament: boolean;
 }
 
+export interface CommentChild {
+  kind: "t1";
+  data: RedditCommentData;
+}
+export interface UserChild {
+  kind: "t2";
+  data: RedditUserData;
+}
+export interface PostChild {
+  kind: "t3";
+  data: RedditPostData;
+}
+export interface SubredditChild {
+  kind: "t5";
+  data: RedditSubredditData;
+}
 
 export interface RedditPostListing {
   kind: "Listing";
@@ -431,21 +519,34 @@ export interface RedditPostListing {
     modhash: string;
     geo_filter: string;
     dist: number;
-    children: {
-      kind: "t3";
-      data: RedditPostData;
-    }[];
-    after: any;
-    before: any;
+    children: PostChild[];
+    before: string;
+    after: string;
   };
 }
 
-export interface RedditUserListing {
-  kind: "t2";
-  data: RedditUserData;
+export interface RedditCommentListing {
+  kind: "Listing";
+  data: {
+    modhash: string;
+    geo_filter: string;
+    dist: number;
+    children: CommentChild[];
+    before: string;
+    after: string;
+  }
 }
 
-export interface RedditSubredditListing {
-  kind: "t5";
-  data: SubredditData;
+type AnyChild = CommentChild | UserChild | PostChild | SubredditChild;
+
+export interface RedditAnyListing {
+  kind: "Listing";
+  data: {
+    modhash: string;
+    geo_filter: string;
+    dist: number;
+    children: AnyChild[];
+    before: string;
+    after: string;
+  }
 }

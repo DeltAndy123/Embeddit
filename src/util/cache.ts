@@ -1,13 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CACHE_MAX_ENTRIES } from "../consts";
+import { CACHE_MAX_ENTRIES, DEBUG } from "../consts";
 import { logger } from "./log";
 
 const CACHE_FILE = path.join(__dirname, "..", "data", "cache.json");
 let cache: Map<string, string> = new Map();
 
 let cacheSaveCounter = 0;
-let saveEntriesNeeded = 2; // Save cache to disk after every n new entries
+let saveEntriesNeeded = 5; // Save cache to disk after every n new entries
+if (DEBUG) saveEntriesNeeded = 1;
 
 async function loadCache() {
   try {

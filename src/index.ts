@@ -1,11 +1,18 @@
-import express from "express";
+import express, { Response } from "express";
 import useragent from "express-useragent";
-import { RedditPostData, RedditPostListing } from "../types/reddit";
+import {
+  RedditCommentData,
+  RedditPostData,
+  RedditPostListing,
+  SubredditChild,
+  RedditSubredditData, RedditAnyListing
+} from "../types/reddit";
 import { getStatuses } from "./richEmbed";
 import { SERVER_BASE } from "./consts";
 import { getRedditData, resolveShareLink } from "./util/api";
 import { AxiosResponse } from "axios";
 import { logger } from "./util/log";
+import { encodeObj } from "./util/encode";
 
 const port = process.env.PORT || 3000;
 
@@ -18,13 +25,83 @@ function postToOptions(post: RedditPostData) {
   return {
     permalink: `https://reddit.com${post.permalink}`,
     title: post.title,
-    subreddit: post.subreddit_name_prefixed,
     author: post.author,
-    score: post.score,
-    hide_score: post.hide_score,
-    upvote_ratio: post.upvote_ratio,
-    description: post.selftext,
-    postId: post.id
+    subreddit: post.subreddit_name_prefixed,
+    // score: post.score,
+    // hide_score: post.hide_score,
+    // upvote_ratio: post.upvote_ratio,
+    body: post.selftext,
+    statusId: encodeObj({
+      type: "post",
+      id: post.id
+    }),
+    image_url: post.url // TODO: Add image for direct (non-Mastodon) embeds
+  }
+}
+
+function commentToOptions(comment: RedditCommentData, post: RedditPostData) {
+  return {
+    permalink: `https://reddit.com${comment.permalink}`,
+    title: post.title,
+    author: comment.author,
+    subreddit: comment.subreddit_name_prefixed,
+    body: comment.body,
+    statusId: encodeObj({
+      type: "comment",
+      cId: comment.id,
+      pId: post.id
+    })
+  }
+}
+
+function subredditToOptions(subreddit: RedditSubredditData) {
+  return {
+    permalink: `https://reddit.com${subreddit.url}`,
+    title: subreddit.title,
+    subreddit: subreddit.display_name,
+    body: subreddit.description,
+    statusId: encodeObj({
+      type: "sub",
+      name: subreddit.display_name
+    })
+  }
+}
+
+function renderRedditPost(id: string, res: Response) {
+  getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
+      .then((response: AxiosResponse<RedditPostListing>) => {
+        const post = response.data.data.children[0].data;
+        res.render("post", {
+          ...postToOptions(post),
+          server_base: SERVER_BASE
+        });
+      })
+      .catch((error) => {
+        logger.error("Failed to fetch Reddit post data:", error);
+        res.status(500).send("Internal Server Error");
+      });
+}
+
+async function renderRedditComment(commentId: string, postId: string, res: Response) {
+  try {
+    const response = await getRedditData<RedditAnyListing>(`/api/info/?id=t1_${commentId},t3_${postId}&raw_json=1`);
+    const comment = response.data.data.children[0];
+    const post = response.data.data.children[1];
+    if (comment.kind !== "t1") {
+      logger.error(`Expected comment (type t1) at index 0 of listing, found type ${comment.kind}`);
+      return;
+    }
+    if (post.kind !== "t3") {
+      logger.error(`Expected post (type t3) at index 1 of listing, found type ${post.kind}`);
+      return;
+    }
+    res.render("comment", {
+      ...commentToOptions(comment.data, post.data),
+      server_base: SERVER_BASE
+    });
+  } catch (error) {
+    logger.error("Failed to fetch Reddit comment or post data:", error);
+    res.status(500).send("Internal Server Error");
   }
 }
 
@@ -37,21 +114,19 @@ app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
     logger.debug("Reddit post request from", req.useragent?.source);
 
     const { id } = req.params;
-    getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
-        .then((response: AxiosResponse<RedditPostListing>) => {
-          const post = response.data.data.children[0].data;
-          res.render("embed", {
-            ...postToOptions(post),
-            image_url: post.url,
-            server_base: SERVER_BASE
-          });
-        })
-        .catch((error) => {
-          logger.error("Failed to fetch Reddit post data:", error);
-          res.status(500).send("Internal Server Error");
-        });
+    renderRedditPost(id, res);
   } else {
     res.redirect(`https://reddit.com${req.path}`);
+  }
+});
+
+// Comments
+app.get("/r/:subreddit/comments/:postId/:title/:commentId", async (req, res) => {
+  if (req.useragent?.isBot) {
+    logger.debug("Reddit comment request from", req.useragent?.source);
+
+    const { postId, commentId } = req.params;
+    await renderRedditComment(commentId, postId, res);
   }
 });
 
@@ -62,33 +137,29 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
   if (req.useragent?.isBot) {
     logger.debug("Reddit share link request from", req.useragent?.source);
     resolveShareLink(subreddit, id)
-        .then((url) => {
+        .then(async (url) => {
           if (!url) {
             res.status(404).send("Not Found");
             return;
           }
-          const postId = new URL(url).pathname.split("/")[4];
-          // Use same logic as above
-          getRedditData(`/api/info/?id=t3_${postId}&raw_json=1`)
-              .then((response: AxiosResponse<RedditPostListing>) => {
-                const post = response.data.data.children[0].data;
-                res.render("embed", {
-                  ...postToOptions(post),
-                  image_url: post.url,
-                  server_base: SERVER_BASE
-                });
-              })
-              .catch((error) => {
-                logger.error("Failed to fetch Reddit post data:", error);
-                res.status(500).send("Internal Server Error");
-              });
+          const urlObj = new URL(url);
+          const urlPath = urlObj.pathname.split("/")
+          const postId = urlPath[4];
+          const commentId = urlPath[6];
+          if (commentId) {
+            // Shortened link redirected to a comment
+            await renderRedditComment(commentId, postId, res);
+          } else {
+            // Shortened link redirected to a post
+            renderRedditPost(postId, res);
+          }
         })
         .catch((error) => {
           logger.error(`Share link resolution failed for ${req.path}:`, error);
           res.status(500).send("Internal Server Error");
         });
 
-    
+
   } else {
     // Redirect to actual URL without tracking parameters
     try {
@@ -105,6 +176,24 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
       logger.error(`Share link resolution failed for ${req.path}, falling back to original URL:`, error);
       res.redirect(`https://reddit.com${req.path}`);
     }
+  }
+});
+
+// Subreddits
+app.get("/r/:subreddit", async (req, res) => {
+  if (req.useragent?.isBot) {
+    logger.debug("Reddit subreddit request from", req.useragent?.source);
+
+    const { subreddit } = req.params;
+    getRedditData(`/r/${subreddit}/about?raw_json=1`)
+        .then((response: AxiosResponse<SubredditChild>) => {
+          res.render("subreddit", {
+            ...subredditToOptions(response.data.data),
+            server_base: SERVER_BASE
+          });
+        });
+  } else {
+    res.redirect(`https://reddit.com${req.path}`)
   }
 });
 
