@@ -301,13 +301,13 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   let postFooter = `<div><b>⬆️ ${postScoreFormatted} • 💬 ${postCommentsFormatted}`;
   let postFooterLength = "⬆️  • 💬 ".length + postScoreFormatted.length + postCommentsFormatted.length;
 
-  const postSelftextHtml = post.selftext_html
+  let postSelftextHtml = post.selftext_html
       ?.slice("<!-- SC_OFF --><div class=\"md\">".length, -"\n</div><!-- SC_ON -->".length) // Remove Reddit's extra HTML
 
   // Title
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
 
-  let maxBodyLength = 700 - (1.35 * post.title.length) - commentFooterLength - postFooterLength;
+  let maxBodyLength = 800 - post.title.length - commentFooterLength - postFooterLength - `Comment by u/${comment.author}`.length;
 
   let body_html = comment.body_html
       ?.slice("<div class=\"md\">".length, -"\n</div>".length);
@@ -339,22 +339,25 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   postFooter += extraPostInfo.appendFooter;
   postFooterLength += extraPostInfo.footerLengthIncrease;
 
-  const maxSelftextLength = 865 - postFooterLength - commentLength;
+  let maxSelftextLength = Math.max(800 - post.title.length - postFooterLength - commentLength, 0);
+  const selftextTagLength = postSelftextHtml?.substring(0, maxSelftextLength)
+      ?.match(/<\/?(p|strong|em|h\d|a|ul|ol|li)>/g)
+      ?.reduce((prev, curr) => prev + curr.length, 0) || 0;
+  maxSelftextLength -= 3.7 * selftextTagLength;
 
   // Post body (selftext)
-  json.content += postSelftextHtml ? `<br/><br/><div>${postSelftextHtml}` : "";
-
   // Truncate selftext if too much text
-  if (json.content.length > maxSelftextLength) {
-    let truncated = json.content.slice(0, maxSelftextLength);
+  if (postSelftextHtml && postSelftextHtml.length > maxSelftextLength) {
+    let truncated = postSelftextHtml.slice(0, maxSelftextLength);
     const lastOpenBracket = truncated.lastIndexOf('<');
     const lastCloseBracket = truncated.lastIndexOf('>');
     if (lastOpenBracket > lastCloseBracket) {
       // Remove incomplete tag
       truncated = truncated.slice(0, lastOpenBracket);
     }
-    json.content = truncated + "…</b></a></strong></blockquote></li></ul></ol>"; // Truncate if too long
+    postSelftextHtml = truncated + "…</b></a></strong></blockquote></li></ul></ol>"; // Truncate if too long
   }
+  json.content += postSelftextHtml ? `<br/><br/><div>${postSelftextHtml}` : "";
 
   // Post footer
   postFooter += "</b></div>"
@@ -362,6 +365,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
 
   // Comment body
   json.content += `<br/><br/><div><blockquote><b><a href="https://reddit.com${comment.permalink}">Comment by u/${comment.author}</a></b><br/><br/>${body_html}${commentFooter}</blockquote></div>`;
+
 
   res.json(json);
 }
