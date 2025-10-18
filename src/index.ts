@@ -13,6 +13,9 @@ import { getRedditData, resolveShareLink } from "./util/api";
 import { AxiosResponse } from "axios";
 import { logger } from "./util/log";
 import { encodeObj } from "./util/encode";
+import { convert } from "./util/video";
+import https from "node:https";
+import fs from "node:fs";
 
 const port = process.env.PORT || 3000;
 
@@ -21,25 +24,23 @@ app.use(useragent.express());
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
-function postToOptions(post: RedditPostData) {
+function postToOptions(post: RedditPostData, mergeAudio: boolean) {
   return {
     permalink: `https://reddit.com${post.permalink}`,
     title: post.title,
     author: post.author,
     subreddit: post.subreddit_name_prefixed,
-    // score: post.score,
-    // hide_score: post.hide_score,
-    // upvote_ratio: post.upvote_ratio,
     body: post.selftext,
     statusId: encodeObj({
       type: "post",
-      id: post.id
+      id: post.id,
+      merge: mergeAudio
     }),
     image_url: post.url // TODO: Add image for direct (non-Mastodon) embeds
   }
 }
 
-function commentToOptions(comment: RedditCommentData, post: RedditPostData) {
+function commentToOptions(comment: RedditCommentData, post: RedditPostData, mergeAudio: boolean) {
   return {
     permalink: `https://reddit.com${comment.permalink}`,
     title: post.title,
@@ -49,7 +50,8 @@ function commentToOptions(comment: RedditCommentData, post: RedditPostData) {
     statusId: encodeObj({
       type: "comment",
       cId: comment.id,
-      pId: post.id
+      pId: post.id,
+      merge: mergeAudio
     })
   }
 }
@@ -67,12 +69,12 @@ function subredditToOptions(subreddit: RedditSubredditData) {
   }
 }
 
-function renderRedditPost(id: string, res: Response) {
+function renderRedditPost(id: string, res: Response, mergeAudio?: boolean) {
   getRedditData(`/api/info/?id=t3_${id}&raw_json=1`)
       .then((response: AxiosResponse<RedditPostListing>) => {
         const post = response.data.data.children[0].data;
         res.render("post", {
-          ...postToOptions(post),
+          ...postToOptions(post, !!mergeAudio),
           server_base: SERVER_BASE
         });
       })
@@ -82,7 +84,7 @@ function renderRedditPost(id: string, res: Response) {
       });
 }
 
-async function renderRedditComment(commentId: string, postId: string, res: Response) {
+async function renderRedditComment(commentId: string, postId: string, res: Response, mergeAudio?: boolean) {
   try {
     const response = await getRedditData<RedditAnyListing>(`/api/info/?id=t1_${commentId},t3_${postId}&raw_json=1`);
     const comment = response.data.data.children[0];
@@ -96,7 +98,7 @@ async function renderRedditComment(commentId: string, postId: string, res: Respo
       return;
     }
     res.render("comment", {
-      ...commentToOptions(comment.data, post.data),
+      ...commentToOptions(comment.data, post.data, !!mergeAudio),
       server_base: SERVER_BASE
     });
   } catch (error) {
@@ -114,7 +116,7 @@ app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
     logger.debug("Reddit post request from", req.useragent?.source);
 
     const { id } = req.params;
-    renderRedditPost(id, res);
+    renderRedditPost(id, res, !!req.query.merge);
   } else {
     res.redirect(`https://reddit.com${req.path}`);
   }
@@ -126,7 +128,7 @@ app.get("/r/:subreddit/comments/:postId/:title/:commentId", async (req, res) => 
     logger.debug("Reddit comment request from", req.useragent?.source);
 
     const { postId, commentId } = req.params;
-    await renderRedditComment(commentId, postId, res);
+    await renderRedditComment(commentId, postId, res, !!req.query.merge);
   }
 });
 
@@ -148,10 +150,10 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
           const commentId = urlPath[6];
           if (commentId) {
             // Shortened link redirected to a comment
-            await renderRedditComment(commentId, postId, res);
+            await renderRedditComment(commentId, postId, res, !!req.query.merge);
           } else {
             // Shortened link redirected to a post
-            renderRedditPost(postId, res);
+            renderRedditPost(postId, res, !!req.query.merge);
           }
         })
         .catch((error) => {
@@ -214,6 +216,26 @@ app.get("/api/v1/statuses/:id", async (req, res) => {
   getStatuses(req, res);
 });
 
-app.listen(port, () => {
-  logger.info(`Listening on port ${port}`);
-});
+
+app.get("/video/:id/:videoName.mp4", async (req, res) => {
+  logger.debug("Video request from", req.useragent?.source);
+
+  await convert(req.params.id, req.params.videoName, res);
+})
+
+
+const httpsCertPath = process.env.HTTPS_CERT_PATH;
+if (httpsCertPath) {
+  const keyPath = `${httpsCertPath}\\privkey.pem`;
+  const certPath = `${httpsCertPath}\\fullchain.pem`;
+  https.createServer({
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath)
+  }, app).listen(port, () => {
+    logger.info(`HTTPS server listening on port ${port}`)
+  })
+} else {
+  app.listen(port, () => {
+    logger.info(`Listening on port ${port}`);
+  });
+}

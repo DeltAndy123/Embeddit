@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 cache.json
+video_output/

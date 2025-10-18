@@ -9,23 +9,24 @@ import {
 } from "../types/reddit";
 import { decodeObj } from "./util/encode";
 import { logger } from "./util/log";
+import { SERVER_BASE } from "./consts";
 
 export function getStatuses(req: Request, res: Response): void {
   const rawId = req.params.id;
   const data = decodeObj(rawId);
   switch (data.type) {
     case "post":
-      redditPost(data.id, req, res);
+      redditPost(data.id, req, res, data.merge);
       break;
     case "sub":
       redditSubreddit(data.name, req, res);
       break;
     case "comment":
-      redditComment(data.cId, data.pId, req, res);
+      redditComment(data.cId, data.pId, req, res, data.merge);
   }
 }
 
-function getExtraPostInfo(post: RedditPostData): {
+function getExtraPostInfo(post: RedditPostData, mergeAudio: boolean): {
   appendFooter: string,
   footerLengthIncrease: number,
   appendContent: string,
@@ -99,14 +100,35 @@ function getExtraPostInfo(post: RedditPostData): {
   } else if (post.post_hint === "hosted:video" && post.media?.reddit_video) {
     // Video post
     const video = post.media.reddit_video;
+    const videoPath = new URL(video.fallback_url).pathname.split("/");
+    const videoId = videoPath[1];
+    const videoName = videoPath[2];
+
+    const estimatedFileSize = (video.bitrate_kbps * video.duration) / 8192;
+    let videoUrl = video.fallback_url;
+    let appendFooter = "";
+    let footerLengthIncrease = 0;
+    // If video is estimated to be less than 50MB and user requests to merge audio, then combine both audio and video
+    if (estimatedFileSize < 50) {
+      if (mergeAudio) {
+        videoUrl = `${SERVER_BASE}/video/${videoId}/${videoName}`;
+      } else {
+        appendFooter = " • <i>Add</i> <code>?merge=1</code> <i>For Audio</i>";
+        footerLengthIncrease = " • Add ?merge=1 For Audio".length;
+      }
+    } else {
+      appendFooter = " • <i>View Original For Audio</i>";
+      footerLengthIncrease = " • View Original For Audio".length;
+    }
+
     return {
-      appendFooter: " • <i>Embedded Videos Have No Audio</i>",
-      footerLengthIncrease: " • Embedded Videos Have No Audio".length,
+      appendFooter,
+      footerLengthIncrease,
       appendContent: "",
       mediaAttachments: [{
         id: post.id,
         type: "video",
-        url: video.fallback_url,
+        url: videoUrl,
         preview_url: post.preview?.images[0]?.source.url || "",
         remote_url: null,
         preview_remote_url: null,
@@ -139,7 +161,7 @@ function getExtraPostInfo(post: RedditPostData): {
   }
 }
 
-async function redditPost(id: string, req: Request, res: Response): Promise<void> {
+async function redditPost(id: string, req: Request, res: Response, mergeAudio: boolean): Promise<void> {
   const postResponse = await getRedditData<RedditPostListing>(`/api/info/?id=t3_${id}&raw_json=1`);
   const post = postResponse.data.data.children[0].data;
   const subredditResponse = await getRedditData<SubredditChild>(`/r/${post.subreddit}/about?raw_json=1`);
@@ -180,7 +202,7 @@ async function redditPost(id: string, req: Request, res: Response): Promise<void
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
 
   // Extra info (images, video, link)
-  const extraPostInfo = getExtraPostInfo(post);
+  const extraPostInfo = getExtraPostInfo(post, mergeAudio);
   json.media_attachments = extraPostInfo.mediaAttachments;
   json.content += extraPostInfo.appendContent;
   footer += extraPostInfo.appendFooter;
@@ -249,7 +271,7 @@ async function redditSubreddit(subName: string, req: Request, res: Response): Pr
   res.json(json)
 }
 
-async function redditComment(commentId: string, postId: string, req: Request, res: Response): Promise<void> {
+async function redditComment(commentId: string, postId: string, req: Request, res: Response, mergeAudio: boolean): Promise<void> {
   const response = await getRedditData<RedditAnyListing>(`/api/info/?id=t1_${commentId},t3_${postId}&raw_json=1`);
   const commentChild = response.data.data.children[0];
   const postChild = response.data.data.children[1];
@@ -333,7 +355,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   const commentLength = bodyLength + commentFooterLength + `Comment by u/${comment.author}`.length;
 
   // Extra info (images, video, link)
-  const extraPostInfo = getExtraPostInfo(post);
+  const extraPostInfo = getExtraPostInfo(post, mergeAudio);
   json.media_attachments = extraPostInfo.mediaAttachments;
   json.content += extraPostInfo.appendContent;
   postFooter += extraPostInfo.appendFooter;

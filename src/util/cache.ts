@@ -14,13 +14,13 @@ async function loadCache() {
   try {
     const data = await fs.promises.readFile(CACHE_FILE, "utf-8");
     cache = new Map(Object.entries(JSON.parse(data)));
-    logger.info("Cache loaded with", cache.size, "entries");
+    logger.info("Share link cache loaded with", cache.size, "entries");
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      logger.info("No cache found, starting with empty cache");
+      logger.info("No share link cache found, starting with empty cache");
       cache = new Map();
     } else {
-      logger.error("Error loading cache:", error);
+      logger.error("Error loading share link cache:", error);
     }
   }
 }
@@ -29,9 +29,9 @@ async function saveCache() {
   try {
     await fs.promises.mkdir(path.dirname(CACHE_FILE), { recursive: true });
     await fs.promises.writeFile(CACHE_FILE, JSON.stringify(Object.fromEntries(cache)), "utf-8");
-    logger.info("Cache saved with", cache.size, "entries");
+    logger.info("Share link cache saved with", cache.size, "entries");
   } catch (error) {
-    logger.error("Error saving cache:", error);
+    logger.error("Error saving share link cache:", error);
   }
 }
 
@@ -39,7 +39,7 @@ export function getFromCache(key: string): string | undefined {
   return cache.get(key);
 }
 
-export function setInCache(key: string, value: string) {
+export async function setInCache(key: string, value: string) {
   // Key: "[subreddit]:[share url id]", Value: actual url
   cache.set(key, value);
   if (cache.size > CACHE_MAX_ENTRIES) {
@@ -50,7 +50,7 @@ export function setInCache(key: string, value: string) {
   cacheSaveCounter++;
   if (cacheSaveCounter >= saveEntriesNeeded) {
     cacheSaveCounter = 0;
-    saveCache();
+    await saveCache();
   }
 }
 
