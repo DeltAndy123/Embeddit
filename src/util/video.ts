@@ -26,6 +26,7 @@ export async function convert(videoId: string, videoName: string, res: Response)
     return res.sendFile(cached.filePath);
   }
   const outputFile = path.join(__dirname, "..", "video_output", `${videoId}.mp4`);
+  await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
 
   res.setHeader("Transfer-Encoding", "chunked");
 
