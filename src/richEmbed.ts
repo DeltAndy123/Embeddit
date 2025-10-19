@@ -113,8 +113,8 @@ function getExtraPostInfo(post: RedditPostData, mergeAudio: boolean): {
       if (mergeAudio) {
         videoUrl = `${SERVER_BASE}/video/${videoId}/${videoName}`;
       } else {
-        appendFooter = " • <i>Add</i> <code>?merge=1</code> <i>For Audio</i>";
-        footerLengthIncrease = " • Add ?merge=1 For Audio".length;
+        appendFooter = " • <i>Add</i> <code>?audio=1</code> <i>For Audio</i>";
+        footerLengthIncrease = " • Add ?audio=1 For Audio".length;
       }
     } else {
       appendFooter = " • <i>View Original For Audio</i>";

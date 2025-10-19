@@ -116,7 +116,7 @@ app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
     logger.debug("Reddit post request from", req.useragent?.source);
 
     const { id } = req.params;
-    renderRedditPost(id, res, !!req.query.merge);
+    renderRedditPost(id, res, !!req.query.audio);
   } else {
     res.redirect(`https://reddit.com${req.path}`);
   }
@@ -128,7 +128,7 @@ app.get("/r/:subreddit/comments/:postId/:title/:commentId", async (req, res) => 
     logger.debug("Reddit comment request from", req.useragent?.source);
 
     const { postId, commentId } = req.params;
-    await renderRedditComment(commentId, postId, res, !!req.query.merge);
+    await renderRedditComment(commentId, postId, res, !!req.query.audio);
   }
 });
 
@@ -150,10 +150,10 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
           const commentId = urlPath[6];
           if (commentId) {
             // Shortened link redirected to a comment
-            await renderRedditComment(commentId, postId, res, !!req.query.merge);
+            await renderRedditComment(commentId, postId, res, !!req.query.audio);
           } else {
             // Shortened link redirected to a post
-            renderRedditPost(postId, res, !!req.query.merge);
+            renderRedditPost(postId, res, !!req.query.audio);
           }
         })
         .catch((error) => {

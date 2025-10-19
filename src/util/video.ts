@@ -20,6 +20,7 @@ let videoCache = new Map<string, {
 
 export async function convert(videoId: string, videoName: string, res: Response) {
   res.setHeader("Content-Type", "video/mp4");
+  res.setHeader("Cache-Control", "max-age=14400")
   const cached = videoCache.get(videoId);
   if (cached && fs.existsSync(cached.filePath)) {
     logger.debug("Found cached video for with ID", videoId)
