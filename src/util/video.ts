@@ -24,37 +24,7 @@ export async function convert(videoId: string, videoName: string, res: Response)
   const cached = videoCache.get(videoId);
   if (cached && fs.existsSync(cached.filePath)) {
     logger.debug("Found cached video for with ID", videoId)
-    try {
-      const stats = await fs.promises.stat(cached.filePath);
-      const fileSize = stats.size;
-
-      const range = res.req.headers.range;
-      if (range) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        const chunkSize = (end - start) + 1;
-
-        res.status(206);
-        res.setHeader("Content-Range", `bytes ${start}-${end}/${fileSize}`);
-        res.setHeader("Accept-Ranges", "bytes");
-        res.setHeader("Content-Length", chunkSize);
-
-        const stream = fs.createReadStream(cached.filePath, { start, end });
-        stream.pipe(res);
-        return;
-      }
-
-      res.setHeader("Content-Length", fileSize);
-      res.setHeader("Accept-Ranges", "bytes");
-      const stream = fs.createReadStream(cached.filePath);
-      stream.pipe(res);
-      return;
-    } catch (error) {
-      logger.error("Error streaming cached video:", error);
-      res.status(500).send("Error streaming video");
-      return;
-    }
+    return res.sendFile(cached.filePath);
   }
   const outputFile = path.join(__dirname, "..", "video_output", `${videoId}.mp4`);
 
