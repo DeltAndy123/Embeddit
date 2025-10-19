@@ -10,6 +10,8 @@ import {
 import { decodeObj } from "./util/encode";
 import { logger } from "./util/log";
 import { SERVER_BASE } from "./consts";
+import { getAudioUrl, startVideoConversion } from "./util/video";
+import path from "node:path";
 
 export function getStatuses(req: Request, res: Response): void {
   const rawId = req.params.id;
@@ -26,12 +28,12 @@ export function getStatuses(req: Request, res: Response): void {
   }
 }
 
-function getExtraPostInfo(post: RedditPostData, mergeAudio: boolean): {
+async function getExtraPostInfo(post: RedditPostData, mergeAudio: boolean): Promise<{
   appendFooter: string,
   footerLengthIncrease: number,
   appendContent: string,
   mediaAttachments: Record<string, any>[]
-} {
+}> {
   const mediaAttachments = [];
   if (post.post_hint === "image") {
     // Single image post (use for loop anyway just in case)
@@ -111,6 +113,13 @@ function getExtraPostInfo(post: RedditPostData, mergeAudio: boolean): {
     // If video is estimated to be less than 50MB and user requests to merge audio, then combine both audio and video
     if (estimatedFileSize < 50) {
       if (mergeAudio) {
+        const audioUrl = await getAudioUrl(`https://v.redd.it/${videoId}`);
+        if (audioUrl) await startVideoConversion(
+            videoId,
+            path.join(__dirname, "video_output", `${videoId}.mp4`),
+            video.fallback_url,
+            audioUrl
+        )
         videoUrl = `${SERVER_BASE}/video/${videoId}/${videoName}`;
       } else {
         appendFooter = " • <i>Add</i> <code>?audio=1</code> <i>For Audio</i>";
@@ -202,7 +211,7 @@ async function redditPost(id: string, req: Request, res: Response, mergeAudio: b
   json.content = `<a href="https://reddit.com${post.permalink}"><b>${post.title}</b></a>`;
 
   // Extra info (images, video, link)
-  const extraPostInfo = getExtraPostInfo(post, mergeAudio);
+  const extraPostInfo = await getExtraPostInfo(post, mergeAudio);
   json.media_attachments = extraPostInfo.mediaAttachments;
   json.content += extraPostInfo.appendContent;
   footer += extraPostInfo.appendFooter;
@@ -355,7 +364,7 @@ async function redditComment(commentId: string, postId: string, req: Request, re
   const commentLength = bodyLength + commentFooterLength + `Comment by u/${comment.author}`.length;
 
   // Extra info (images, video, link)
-  const extraPostInfo = getExtraPostInfo(post, mergeAudio);
+  const extraPostInfo = await getExtraPostInfo(post, mergeAudio);
   json.media_attachments = extraPostInfo.mediaAttachments;
   json.content += extraPostInfo.appendContent;
   postFooter += extraPostInfo.appendFooter;

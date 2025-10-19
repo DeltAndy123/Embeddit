@@ -27,7 +27,6 @@ export async function convert(videoId: string, videoName: string, res: Response)
     return res.sendFile(cached.filePath);
   }
   const outputFile = path.join(__dirname, "..", "video_output", `${videoId}.mp4`);
-  await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
 
   res.setHeader("Transfer-Encoding", "chunked");
 
@@ -51,22 +50,19 @@ export async function convert(videoId: string, videoName: string, res: Response)
     return res.redirect(videoUrl);
   }
 
-  const conversionPromise = startConversion(videoId, outputFile, videoUrl, audioUrl);
+  const conversionPromise = startVideoConversion(videoId, outputFile, videoUrl, audioUrl);
   conversionsPromises.set(videoId, { promise: conversionPromise, outputFile });
 
   try {
     await conversionPromise;
     res.sendFile(outputFile);
-    const expireDate = new Date();
-    expireDate.setDate(expireDate.getDate() + 1);
-    await saveVideoToCache(videoId, outputFile, expireDate.getTime());
   } catch (error) {
     logger.error(`Conversion failed for ${videoId}:`, error);
     res.status(500).send("Video conversion failed")
   }
 }
 
-function startConversion(videoId: string, outputFile: string, videoUrl: string, audioUrl: string) {
+export function startVideoConversion(videoId: string, outputFile: string, videoUrl: string, audioUrl: string) {
   const ffmpegArgs = [
     "-i", videoUrl,          // Video input
     "-i", audioUrl,          // Audio input
@@ -76,7 +72,8 @@ function startConversion(videoId: string, outputFile: string, videoUrl: string, 
     "-y",                    // Overwrite output file
     outputFile
   ];
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<void>(async (resolve, reject) => {
+    await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
     const startTime = performance.now();
     const ffmpegProc = spawn("ffmpeg", ffmpegArgs);
     const ffmpegProgress = {
@@ -110,13 +107,16 @@ function startConversion(videoId: string, outputFile: string, videoUrl: string, 
         }
       });
     });
-    ffmpegProc.on("close", (code) => {
+    ffmpegProc.on("close", async (code) => {
       const endTime = performance.now();
       conversionsPromises.delete(videoId);
       const conversionTime = Math.round(endTime - startTime) / 1000;
 
       if (code === 0) {
         logger.debug(`Video conversion completed successfully, took ${conversionTime}s`);
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + 1);
+        await saveVideoToCache(videoId, outputFile, expireDate.getTime());
         resolve();
       } else {
         fs.promises.unlink(outputFile).catch(() => {});
@@ -125,10 +125,10 @@ function startConversion(videoId: string, outputFile: string, videoUrl: string, 
         reject(new Error("FFmpeg failed to convert video"));
       }
     });
-  })
+  });
 }
 
-async function getAudioUrl(baseUrl: string) {
+export async function getAudioUrl(baseUrl: string) {
   const possibleAudioUrls = [
     `${baseUrl}/DASH_AUDIO_128.mp4?source=fallback`,
     `${baseUrl}/DASH_AUDIO_64.mp4?source=fallback`,
