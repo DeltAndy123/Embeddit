@@ -223,6 +223,12 @@ app.get("/video/:id/:videoName.mp4", async (req, res) => {
   await convert(req.params.id, req.params.videoName, res);
 })
 
+app.get("/videoALT/:id/:videoName.mp4", async (req, res) => {
+  logger.debug("Video request from", req.useragent?.source);
+
+  await convert(req.params.id, req.params.videoName, res);
+})
+
 
 const httpsCertPath = process.env.HTTPS_CERT_PATH;
 if (httpsCertPath) {
