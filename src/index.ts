@@ -111,9 +111,25 @@ async function renderRedditComment(commentId: string, postId: string, res: Respo
 // Example:
 // https://www.reddit.com/r/discordapp/comments/7j4c2v/how_to_make_my_website_appear_in_discord_embeds/
 // (or http://localhost:3000/r/discordapp/comments/7j4c2v/how_to_make_my_website_appear_in_discord_embeds/)
-app.get("/r/:subreddit/comments/:id/:title", async (req, res) => {
+app.get([
+    "/r/:subreddit/comments/:id/:title",
+    "/user/:user/comments/:id/:title",
+    "/u/:user/comments/:id/:title"
+], async (req, res) => {
   if (req.useragent?.isBot) {
     logger.debug("Reddit post request from", req.useragent?.source);
+
+    const { id } = req.params;
+    renderRedditPost(id, res, !!req.query.audio);
+  } else {
+    res.redirect(`https://reddit.com${req.path}`);
+  }
+});
+
+// Gallery links (redirects to posts)
+app.get("/gallery/:id", async (req, res) => {
+  if (req.useragent?.isBot) {
+    logger.debug("Reddit (gallery) post request from", req.useragent?.source);
 
     const { id } = req.params;
     renderRedditPost(id, res, !!req.query.audio);
@@ -129,6 +145,8 @@ app.get("/r/:subreddit/comments/:postId/:title/:commentId", async (req, res) => 
 
     const { postId, commentId } = req.params;
     await renderRedditComment(commentId, postId, res, !!req.query.audio);
+  } else {
+    res.redirect(`https://reddit.com${req.path}`);
   }
 });
 
@@ -149,10 +167,10 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
           const postId = urlPath[4];
           const commentId = urlPath[6];
           if (commentId) {
-            // Shortened link redirected to a comment
+            // Share link redirected to a comment
             await renderRedditComment(commentId, postId, res, !!req.query.audio);
           } else {
-            // Shortened link redirected to a post
+            // Share link redirected to a post
             renderRedditPost(postId, res, !!req.query.audio);
           }
         })
@@ -160,8 +178,6 @@ app.get("/r/:subreddit/s/:id", async (req, res) => {
           logger.error(`Share link resolution failed for ${req.path}:`, error);
           res.status(500).send("Internal Server Error");
         });
-
-
   } else {
     // Redirect to actual URL without tracking parameters
     try {
@@ -223,12 +239,21 @@ app.get("/video/:id/:videoName.mp4", async (req, res) => {
   await convert(req.params.id, req.params.videoName, res);
 })
 
-app.get("/videoALT/:id/:videoName.mp4", async (req, res) => {
-  logger.debug("Video request from", req.useragent?.source);
+// Short links (redd.it/abc123)
+app.get("/:id", async (req, res) => {
+  const { id } = req.params;
 
-  await convert(req.params.id, req.params.videoName, res);
-})
+  if (!/^[a-z0-9]{6,8}$/i.test(id)) {
+    return res.status(404).send("Not Found");
+  }
 
+  if (req.useragent?.isBot) {
+    logger.debug("Reddit post request from", req.useragent?.source);
+    renderRedditPost(id, res, !!req.query.audio);
+  } else {
+    res.redirect(`https://reddit.com/${id}`);
+  }
+});
 
 const httpsCertPath = process.env.HTTPS_CERT_PATH;
 if (httpsCertPath) {
