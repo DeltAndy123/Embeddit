@@ -1,5 +1,5 @@
 node_modules/
 dist/
 .env
-cache.json
+data/
 video_output/
