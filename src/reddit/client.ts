@@ -1,4 +1,11 @@
+import { type DeepReadonly, type GetOrSetOptions, TtlCache } from "@/lib/cache";
 import type { OAuthClient } from "@/reddit/oauth";
+import {
+  isRedditHost,
+  parseRedditPermalink,
+  type RedditPermalink,
+  stripTrackingParams,
+} from "@/reddit/url";
 import type {
   CommentChild,
   PostChild,
@@ -10,13 +17,6 @@ import type {
   SubredditChild,
 } from "@/types/reddit";
 
-import {
-  isRedditHost,
-  parseRedditPermalink,
-  type RedditPermalink,
-  stripTrackingParams,
-} from "@/reddit/url";
-
 const API_BASE = "https://oauth.reddit.com";
 const THING_ID_PATTERN = /^[a-z0-9]{1,10}$/i;
 const SUBREDDIT_PATTERN = /^\w{2,21}$/;
@@ -26,6 +26,39 @@ const MAX_SHARE_REDIRECTS = 3;
 export interface ResolvedShareLink extends RedditPermalink {
   url: string;
 }
+
+export interface RedditCacheTtl {
+  post: number;
+  comment: number;
+  subreddit: number;
+  shareLink: number;
+  /** How long a "not found" result is remembered, in ms */
+  notFound: number;
+}
+
+export const DEFAULT_CACHE_TTL: RedditCacheTtl = {
+  post: 60_000,
+  comment: 60_000,
+  subreddit: 3_600_000,
+  shareLink: 7 * 86_400_000,
+  notFound: 30_000,
+};
+
+// A ttl of 0 is never stored, but concurrent identical requests still share one load
+const NO_CACHE_TTL: RedditCacheTtl = {
+  post: 0,
+  comment: 0,
+  subreddit: 0,
+  shareLink: 0,
+  notFound: 0,
+};
+
+const MAX_CACHE_ENTRIES = {
+  post: 1_000,
+  comment: 1_000,
+  subreddit: 500,
+  shareLink: 10_000,
+};
 
 export class RedditApiError extends Error {
   override name = "RedditApiError";
@@ -52,6 +85,9 @@ export interface RedditClientOptions {
   userAgent: string;
   timeoutMs?: number;
   fetch?: typeof fetch;
+  /** Omitted entries default to 0 (not stored). Pass DEFAULT_CACHE_TTL in production. */
+  cacheTtl?: Partial<RedditCacheTtl>;
+  now?: () => number;
 }
 
 export class RedditClient {
@@ -59,62 +95,118 @@ export class RedditClient {
   readonly #userAgent: string;
   readonly #timeoutMs: number;
   readonly #fetch: typeof fetch;
+  readonly #ttl: RedditCacheTtl;
+  readonly #posts: TtlCache<string, RedditPostData>;
+  readonly #comments: TtlCache<
+    string,
+    { comment: RedditCommentData; post: RedditPostData }
+  >;
+  readonly #subreddits: TtlCache<string, RedditSubredditData>;
+  readonly #shareLinks: TtlCache<string, ResolvedShareLink>;
 
   constructor(opts: RedditClientOptions) {
     this.#oauth = opts.oauth;
     this.#userAgent = opts.userAgent;
     this.#timeoutMs = opts.timeoutMs ?? 10_000;
     this.#fetch = opts.fetch ?? fetch;
+    this.#ttl = { ...NO_CACHE_TTL, ...opts.cacheTtl };
+    this.#posts = new TtlCache({
+      maxEntries: MAX_CACHE_ENTRIES.post,
+      now: opts.now,
+    });
+    this.#comments = new TtlCache({
+      maxEntries: MAX_CACHE_ENTRIES.comment,
+      now: opts.now,
+    });
+    this.#subreddits = new TtlCache({
+      maxEntries: MAX_CACHE_ENTRIES.subreddit,
+      now: opts.now,
+    });
+    this.#shareLinks = new TtlCache({
+      maxEntries: MAX_CACHE_ENTRIES.shareLink,
+      now: opts.now,
+    });
   }
 
-  async getPost(id: string): Promise<RedditPostData> {
+  async getPost(id: string): Promise<DeepReadonly<RedditPostData>> {
     assertThingId(id);
-    const listing = await this.#get<RedditPostListing>("/api/info", {
-      id: `t3_${id}`,
-    });
-    const post = listing.data?.children?.find(isPost);
-    if (!post) throw new RedditNotFoundError(`Post ${id} not found`);
-    return post.data;
+    return this.#posts.getOrSet(
+      `post:${id.toLowerCase()}`,
+      async () => {
+        const listing = await this.#get<RedditPostListing>("/api/info", {
+          id: `t3_${id}`,
+        });
+        const post = listing.data?.children?.find(isPost);
+        if (!post) throw new RedditNotFoundError(`Post ${id} not found`);
+        return post.data;
+      },
+      this.#cacheOptions(this.#ttl.post),
+    );
   }
 
   async getComment(
     commentId: string,
     postId: string,
-  ): Promise<{ comment: RedditCommentData; post: RedditPostData }> {
+  ): Promise<
+    DeepReadonly<{ comment: RedditCommentData; post: RedditPostData }>
+  > {
     assertThingId(commentId);
     assertThingId(postId);
-    const listing = await this.#get<RedditAnyListing>("/api/info", {
-      id: `t1_${commentId},t3_${postId}`,
-    });
-    const children = listing.data?.children ?? [];
-    const comment = children.find(isComment);
-    const post = children.find(isPost);
-    if (!comment || !post) {
-      throw new RedditNotFoundError(`Comment ${commentId} not found`);
-    }
-    return { comment: comment.data, post: post.data };
+    return this.#comments.getOrSet(
+      `comment:${commentId.toLowerCase()}:${postId.toLowerCase()}`,
+      async () => {
+        const listing = await this.#get<RedditAnyListing>("/api/info", {
+          id: `t1_${commentId},t3_${postId}`,
+        });
+        const children = listing.data?.children ?? [];
+        const comment = children.find(isComment);
+        const post = children.find(isPost);
+        if (!comment || !post) {
+          throw new RedditNotFoundError(`Comment ${commentId} not found`);
+        }
+        return { comment: comment.data, post: post.data };
+      },
+      this.#cacheOptions(this.#ttl.comment),
+    );
   }
 
-  async getSubreddit(name: string): Promise<RedditSubredditData> {
+  async getSubreddit(name: string): Promise<DeepReadonly<RedditSubredditData>> {
     if (!SUBREDDIT_PATTERN.test(name)) {
       throw new RedditNotFoundError(`Invalid subreddit name`);
     }
-    const about = await this.#get<SubredditChild>(`/r/${name}/about`);
-    if (about.kind !== "t5" || !about.data) {
-      throw new RedditNotFoundError(`Subreddit ${name} not found`);
-    }
-    return about.data;
+    return this.#subreddits.getOrSet(
+      `sub:${name.toLowerCase()}`,
+      async () => {
+        const about = await this.#get<SubredditChild>(`/r/${name}/about`);
+        if (about.kind !== "t5" || !about.data) {
+          throw new RedditNotFoundError(`Subreddit ${name} not found`);
+        }
+        return about.data;
+      },
+      this.#cacheOptions(this.#ttl.subreddit),
+    );
   }
 
   // Share links (/r/<sub>/s/<id>) redirect to the canonical permalink with tracking params
   async resolveShareLink(
     subreddit: string,
     id: string,
-  ): Promise<ResolvedShareLink> {
+  ): Promise<DeepReadonly<ResolvedShareLink>> {
     if (!SUBREDDIT_PATTERN.test(subreddit) || !SHARE_ID_PATTERN.test(id)) {
       throw new RedditNotFoundError("Invalid share link");
     }
+    // Both parts are case-sensitive (wrong case for either part redirects to the subreddit page)
+    return this.#shareLinks.getOrSet(
+      `share:${subreddit}:${id}`,
+      () => this.#followShareLink(subreddit, id),
+      this.#cacheOptions(this.#ttl.shareLink),
+    );
+  }
 
+  async #followShareLink(
+    subreddit: string,
+    id: string,
+  ): Promise<ResolvedShareLink> {
     let url = new URL(`/r/${subreddit}/s/${id}`, API_BASE);
     for (let hop = 0; hop < MAX_SHARE_REDIRECTS; hop++) {
       const response = await this.#send(url, {
@@ -133,7 +225,7 @@ export class RedditClient {
       const location = response.headers.get("location");
       if (!location) break;
       const next = new URL(location, url);
-      // Never follow a redirect off Reddit, and never send our token there
+      // Never follow a redirect off Reddit
       if (next.protocol !== "https:" || !isRedditHost(next.hostname)) break;
 
       const permalink = parseRedditPermalink(next.pathname);
@@ -146,7 +238,18 @@ export class RedditClient {
       url = next;
     }
 
-    throw new RedditNotFoundError("Share link did not resolve to a post");
+    throw new RedditNotFoundError(
+      "Share link did not resolve to a post or comment",
+    );
+  }
+
+  #cacheOptions(ttlMs: number): GetOrSetOptions {
+    return {
+      ttlMs,
+      // Only remember "not found"; rate limits and server errors must be retried
+      errorTtlMs: (error) =>
+        error instanceof RedditNotFoundError ? this.#ttl.notFound : undefined,
+    };
   }
 
   async #get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
