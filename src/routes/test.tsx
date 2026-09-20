@@ -88,23 +88,4 @@ app.get("/limits", (c) => {
   );
 });
 
-app.get("/video", (c) => {
-  return c.html(
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Test</title>
-        <DiscordComponentEmbedScript
-          data={{
-            component: e.container([e.mediaGallery([
-
-            ])]),
-          }}
-        />
-      </head>
-      <body></body>
-    </html>,
-  );
-});
-
 export default app;
