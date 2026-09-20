@@ -28,8 +28,8 @@ export const TimestampStyle = {
   LongTime: "T",
   /**
    * Short date
-   * - en-US: `04/20/2021`
-   * - en-GB: `20/04/2021`
+   * - en-US: `04/20/21`
+   * - en-GB: `20/04/21`
    */
   ShortDate: "d",
   /**
@@ -39,17 +39,29 @@ export const TimestampStyle = {
    */
   LongDate: "D",
   /**
-   * Short date and time
-   * - en-US: `April 20, 2021 4:20 PM`
-   * - en-GB: `20 April 2021 16:20`
+   * Short date with time
+   * - en-US: `4/20/21, 4:20 PM`
+   * - en-GB: `20/04/21, 16:20`
    */
-  ShortDateTime: "f",
+  ShortDateShortTime: "s",
+  /**
+   * Short date with long time
+   * - en-US: `4/20/21, 4:20:30 PM`
+   * - en-GB: `20/04/21, 16:20:30`
+   */
+  ShortDateLongTime: "S",
+  /**
+   * Long date and time
+   * - en-US: `April 20, 2021 at 4:20 PM`
+   * - en-GB: `20 April 2021 at 16:20`
+   */
+  LongDateTime: "f",
   /**
    * Long date and time, with the weekday
-   * - en-US: `Tuesday, April 20, 2021 4:20 PM`
-   * - en-GB: `Tuesday, 20 April 2021 16:20`
+   * - en-US: `Tuesday, April 20, 2021 at 4:20 PM`
+   * - en-GB: `Tuesday, 20 April 2021 at 16:20`
    */
-  LongDateTime: "F",
+  WeekdayDateTime: "F",
   /**
    * Relative time (automatically kept up to date by the client)
    * - en-US & en-GB: `2 months ago`
