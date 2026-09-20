@@ -85,7 +85,7 @@ export interface RedditPostData {
   distinguished: null | string;
   domain: string;
   downs: number;
-  edited: boolean;
+  edited: boolean | number;
   gilded: 0; // Gilding is the same as awards, so it no longer exists 🥲
   gildings: Record<never, never>; // Gilding is the same as awards, so it no longer exists 🥲
   hide_score: boolean;
@@ -215,7 +215,7 @@ export interface RedditCommentData {
   approved_at_utc: null | number;
   author_is_blocked: boolean;
   comment_type: null | string;
-  edited: boolean;
+  edited: boolean | number;
   mod_reason_by: null | string;
   banned_by: null | string;
   ups: number;
