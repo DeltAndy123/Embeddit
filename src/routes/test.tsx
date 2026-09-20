@@ -14,6 +14,7 @@ app.get("/", (c) => {
         e.textDisplay(
           "Body with **bold**, ||spoiler|| and a list:\n- one\n- two",
         ),
+        e.textDisplay("Also a timestamp: <t:1700000000:R>"),
         e.section(["test"], e.thumbnail("https://picsum.photos/800/599")),
         e.mediaGallery([
           { url: "https://picsum.photos/800/600", description: "test image" },
