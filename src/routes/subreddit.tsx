@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import * as e from "@/embed/components";
-import { DiscordComponentEmbedScript } from "@/views/JSONScript";
+import { DiscordComponentEmbedScript } from "@/views/JsonScript";
 
 const app = new Hono();
 

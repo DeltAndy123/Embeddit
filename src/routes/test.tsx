@@ -2,7 +2,7 @@ import { SeparatorSpacingSize } from "discord-api-types/v10";
 import { Hono } from "hono";
 import * as e from "@/embed/components";
 import type { DiscordComponentEmbed } from "@/types/discord";
-import { DiscordComponentEmbedScript } from "@/views/JSONScript";
+import { DiscordComponentEmbedScript } from "@/views/JsonScript";
 
 const app = new Hono();
 

@@ -1,7 +1,7 @@
 import { raw } from "hono/html";
 import type { DiscordComponentEmbed } from "@/types/discord";
 
-const escapeJSONForScript = (data: unknown) =>
+const escapeJsonForScript = (data: unknown) =>
   JSON.stringify(data)
     .replace(/</g, "\\u003c")
     .replace(/>/g, "\\u003e")
@@ -9,9 +9,9 @@ const escapeJSONForScript = (data: unknown) =>
     .replace(/\u2028/g, "\\u2028")
     .replace(/\u2029/g, "\\u2029");
 
-export const JSONScript = ({ id, data }: { id: string; data: unknown }) => (
+export const JsonScript = ({ id, data }: { id: string; data: unknown }) => (
   <script id={id} type="application/json">
-    {raw(escapeJSONForScript(data))}
+    {raw(escapeJsonForScript(data))}
   </script>
 );
 
@@ -21,6 +21,6 @@ export const DiscordComponentEmbedScript = ({
   data: DiscordComponentEmbed;
 }) => (
   <script id="discord:component-embed" type="application/json">
-    {raw(escapeJSONForScript(data))}
+    {raw(escapeJsonForScript(data))}
   </script>
 );
