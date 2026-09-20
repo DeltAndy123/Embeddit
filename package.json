@@ -7,12 +7,12 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
+    "token": "bun src/scripts/generateOAuthToken.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
     "@biomejs/biome": "^2.5.14",
-    "axios": "^1.20.0",
     "discord-api-types": "^0.38.55",
     "hono": "^4.13.8"
   },

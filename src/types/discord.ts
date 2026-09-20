@@ -1,7 +1,12 @@
 import type {
-  APIActionRowComponent, APIButtonComponentWithURL, APIContainerComponent,
-  APIMediaGalleryComponent, APISectionComponent, APISeparatorComponent,
-  APITextDisplayComponent, APIThumbnailComponent,
+  APIActionRowComponent,
+  APIButtonComponentWithURL,
+  APIContainerComponent,
+  APIMediaGalleryComponent,
+  APISectionComponent,
+  APISeparatorComponent,
+  APITextDisplayComponent,
+  APIThumbnailComponent,
 } from "discord-api-types/v10";
 
 export type EmbedActionRow = APIActionRowComponent<APIButtonComponentWithURL>;
