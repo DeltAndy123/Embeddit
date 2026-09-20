@@ -89,4 +89,24 @@ app.get("/limits", (c) => {
   );
 });
 
+app.get("/error", (c) => {
+  return c.html(
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>Test</title>
+        <meta property="og:title" content="Fallback title" />
+        <meta property="og:description" content="Fallback description" />
+        <meta property="og:image" content="https://picsum.photos/800/600" />
+        <DiscordComponentEmbedScript
+          data={{
+            component: e.container([e.textDisplay("Testing")]),
+          }}
+        />
+      </head>
+      <body></body>
+    </html>,
+  );
+});
+
 export default app;

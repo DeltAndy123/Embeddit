@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { ConfigError, loadConfig } from "@/config";
+import { handleError, handleNotFound } from "@/errors";
 import { logger } from "@/lib/log";
 import { botOnly } from "@/middleware/botOnly";
 import subreddit from "@/routes/subreddit";
@@ -34,6 +35,9 @@ app.route("/test", test);
 app.route("/", subreddit);
 
 app.get("/", (c) => c.text("Hello World!"));
+
+app.onError(handleError);
+app.notFound(handleNotFound);
 
 logger.info(
   `Listening on port ${config.port} (public URL ${config.serverBase})`,
