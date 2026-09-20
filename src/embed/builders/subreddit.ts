@@ -1,4 +1,4 @@
-import { SeparatorSpacingSize } from 'discord-api-types/v10';
+import { SeparatorSpacingSize } from "discord-api-types/v10";
 import * as e from "@/embed/components";
 import {
   accentColorOrDefault,

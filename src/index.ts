@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { ConfigError, loadConfig } from "@/config";
 import { logger } from "@/lib/log";
+import { botOnly } from "@/middleware/botOnly";
 import subreddit from "@/routes/subreddit";
 import test from "@/routes/test";
 import { type AppEnv, createServices } from "@/services";
@@ -26,6 +27,8 @@ app.use(async (c, next) => {
   c.set("services", services);
   await next();
 });
+
+app.use("/r/*", botOnly);
 
 app.route("/test", test);
 app.route("/", subreddit);
