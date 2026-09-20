@@ -7,7 +7,9 @@ export interface RedditPermalink {
 const PERMALINK_PATTERN =
   /^\/(?:r|u|user)\/[^/]+\/comments\/([a-z0-9]{1,10})(?:\/[^/]+(?:\/([a-z0-9]{1,10}))?)?\/?$/i;
 
-export const parseRedditPermalink = (pathname: string): RedditPermalink | null => {
+export const parseRedditPermalink = (
+  pathname: string,
+): RedditPermalink | null => {
   const match = PERMALINK_PATTERN.exec(pathname);
   if (!match?.[1]) return null;
   return match[2]

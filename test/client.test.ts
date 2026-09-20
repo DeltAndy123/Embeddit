@@ -4,6 +4,7 @@ import {
   RedditClient,
   RedditNotFoundError,
 } from "@/reddit/client";
+import { nth } from "./helpers";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status });
@@ -42,7 +43,7 @@ describe("RedditClient", () => {
     const post = await client.getPost("abc123");
 
     expect(post.title).toBe("Hi");
-    const { url, init } = requests[0]!;
+    const { url, init } = nth(requests, 0);
     expect(url.origin).toBe("https://oauth.reddit.com");
     expect(url.pathname).toBe("/api/info");
     expect(url.searchParams.get("id")).toBe("t3_abc123");
@@ -99,7 +100,7 @@ describe("RedditClient", () => {
 
     expect(requests).toHaveLength(2);
     expect(invalidated()).toBe(1);
-    const second = requests[1]!.init.headers as Record<string, string>;
+    const second = nth(requests, 1).init.headers as Record<string, string>;
     expect(second.Authorization).toBe("Bearer token2");
   });
 

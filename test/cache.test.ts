@@ -75,7 +75,9 @@ describe("TtlCache", () => {
       return "ok";
     };
 
-    expect(cache.getOrSet("key", flaky, { ttlMs: 1000 })).rejects.toThrow("boom");
+    expect(cache.getOrSet("key", flaky, { ttlMs: 1000 })).rejects.toThrow(
+      "boom",
+    );
     expect(await cache.getOrSet("key", flaky, { ttlMs: 1000 })).toBe("ok");
     expect(attempts).toBe(2);
   });
@@ -123,7 +125,9 @@ describe("TtlCache", () => {
     cache.delete("key");
     expect(await pending).toBe("stale");
 
-    expect(await cache.getOrSet("key", loader("fresh"), { ttlMs: 1000 })).toBe("fresh");
+    expect(await cache.getOrSet("key", loader("fresh"), { ttlMs: 1000 })).toBe(
+      "fresh",
+    );
     expect(calls()).toBe(1);
   });
 

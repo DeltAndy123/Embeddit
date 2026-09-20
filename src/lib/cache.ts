@@ -40,7 +40,6 @@ export class TtlCache<K, V> {
     return this.#entries.size;
   }
 
-
   /**
    * Returns the cached value for a key, or loads and caches it when absent
    *

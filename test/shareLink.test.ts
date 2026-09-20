@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { RedditApiError, RedditClient, RedditNotFoundError } from "@/reddit/client";
+import {
+  RedditApiError,
+  RedditClient,
+  RedditNotFoundError,
+} from "@/reddit/client";
+import { nth } from "./helpers";
 
 const redirect = (location: string | null, status = 301) =>
   new Response(null, {
@@ -34,16 +39,18 @@ describe("RedditClient.resolveShareLink", () => {
       postId: "abc123",
     });
     expect(requests).toHaveLength(1);
-    expect(requests[0]!.url.toString()).toBe(
+    expect(nth(requests, 0).url.toString()).toBe(
       "https://oauth.reddit.com/r/example/s/AbCdEf1234",
     );
-    expect(requests[0]!.init.method).toBe("HEAD");
-    expect(requests[0]!.init.redirect).toBe("manual");
+    expect(nth(requests, 0).init.method).toBe("HEAD");
+    expect(nth(requests, 0).init.redirect).toBe("manual");
   });
 
   test("returns the comment id for comment share links", async () => {
     const { client } = setup(() =>
-      redirect("https://www.reddit.com/r/sub/comments/abc123/title/def456/?utm_source=share"),
+      redirect(
+        "https://www.reddit.com/r/sub/comments/abc123/title/def456/?utm_source=share",
+      ),
     );
 
     const resolved = await client.resolveShareLink("sub", "SHAREID");
@@ -85,7 +92,9 @@ describe("RedditClient.resolveShareLink", () => {
   });
 
   test("gives up after too many hops", async () => {
-    const { client, requests } = setup(() => redirect("https://www.reddit.com/r/sub/s/LOOP"));
+    const { client, requests } = setup(() =>
+      redirect("https://www.reddit.com/r/sub/s/LOOP"),
+    );
     expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
@@ -94,12 +103,14 @@ describe("RedditClient.resolveShareLink", () => {
 
   test("maps 404 and other statuses to typed errors", async () => {
     const missing = setup(() => new Response(null, { status: 404 }));
-    expect(missing.client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
-      RedditNotFoundError,
-    );
+    expect(
+      missing.client.resolveShareLink("sub", "SHAREID"),
+    ).rejects.toBeInstanceOf(RedditNotFoundError);
 
     const limited = setup(() => new Response(null, { status: 429 }));
-    const error = await limited.client.resolveShareLink("sub", "SHAREID").catch((e) => e);
+    const error = await limited.client
+      .resolveShareLink("sub", "SHAREID")
+      .catch((e) => e);
     expect(error).toBeInstanceOf(RedditApiError);
     expect(error.status).toBe(429);
   });
