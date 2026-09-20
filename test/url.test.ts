@@ -7,18 +7,18 @@ import {
 
 describe("parseRedditPermalink", () => {
   test("parses posts with and without a slug", () => {
-    expect(parseRedditPermalink("/r/geometrydash/comments/1nv7724/")).toEqual({
-      postId: "1nv7724",
+    expect(parseRedditPermalink("/r/example/comments/abc123/")).toEqual({
+      postId: "abc123",
     });
     expect(
-      parseRedditPermalink("/r/geometrydash/comments/1nv7724/some_title/"),
-    ).toEqual({ postId: "1nv7724" });
+      parseRedditPermalink("/r/example/comments/abc123/some_title/"),
+    ).toEqual({ postId: "abc123" });
   });
 
   test("parses comment permalinks", () => {
     expect(
-      parseRedditPermalink("/r/sub/comments/1nv7724/some_title/ab12cd/"),
-    ).toEqual({ postId: "1nv7724", commentId: "ab12cd" });
+      parseRedditPermalink("/r/sub/comments/abc123/some_title/ab12cd/"),
+    ).toEqual({ postId: "abc123", commentId: "ab12cd" });
   });
 
   test("supports user profile posts and placeholder slugs", () => {
@@ -33,7 +33,7 @@ describe("parseRedditPermalink", () => {
 
   test("rejects anything else", () => {
     expect(parseRedditPermalink("/r/sub/")).toBeNull();
-    expect(parseRedditPermalink("/r/sub/s/OFdMEx2bJH")).toBeNull();
+    expect(parseRedditPermalink("/r/sub/s/AbCdEf1234")).toBeNull();
     expect(parseRedditPermalink("/r/sub/comments/../etc/passwd")).toBeNull();
     expect(parseRedditPermalink("/r/sub/comments/abc123/a/b/c")).toBeNull();
   });

@@ -20,22 +20,22 @@ const setup = (handler: (url: URL, init: RequestInit) => Response) => {
   return { client, requests };
 };
 
-const REAL_LOCATION =
-  "https://www.reddit.com/r/geometrydash/comments/1nv7724/minecraft_just_surpassed_robtop_games/?share_id=w44sYdWVwcBg2jqVgPPKq&utm_content=1&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1";
+const LOCATION_WITH_TRACKING =
+  "https://www.reddit.com/r/example/comments/abc123/some_title/?share_id=SHAREID123&utm_content=1&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1";
 
 describe("RedditClient.resolveShareLink", () => {
   test("resolves a share link in one hop and strips tracking params", async () => {
-    const { client, requests } = setup(() => redirect(REAL_LOCATION));
+    const { client, requests } = setup(() => redirect(LOCATION_WITH_TRACKING));
 
-    const resolved = await client.resolveShareLink("geometrydash", "OFdMEx2bJH");
+    const resolved = await client.resolveShareLink("example", "AbCdEf1234");
 
     expect(resolved).toEqual({
-      url: "https://www.reddit.com/r/geometrydash/comments/1nv7724/minecraft_just_surpassed_robtop_games/",
-      postId: "1nv7724",
+      url: "https://www.reddit.com/r/example/comments/abc123/some_title/",
+      postId: "abc123",
     });
     expect(requests).toHaveLength(1);
     expect(requests[0]!.url.toString()).toBe(
-      "https://oauth.reddit.com/r/geometrydash/s/OFdMEx2bJH",
+      "https://oauth.reddit.com/r/example/s/AbCdEf1234",
     );
     expect(requests[0]!.init.method).toBe("HEAD");
     expect(requests[0]!.init.redirect).toBe("manual");
@@ -105,7 +105,7 @@ describe("RedditClient.resolveShareLink", () => {
   });
 
   test("invalid input never reaches the network", async () => {
-    const { client, requests } = setup(() => redirect(REAL_LOCATION));
+    const { client, requests } = setup(() => redirect(LOCATION_WITH_TRACKING));
 
     expect(client.resolveShareLink("a/b", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
