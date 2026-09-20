@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import subreddit from '@/routes/subreddit';
+import subreddit from "@/routes/subreddit";
 import test from "@/routes/test";
 
 const app = new Hono();

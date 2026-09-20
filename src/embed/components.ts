@@ -7,13 +7,13 @@ import {
   ButtonStyle,
   ComponentType,
   type SeparatorSpacingSize,
-} from 'discord-api-types/v10';
+} from "discord-api-types/v10";
 import type {
   EmbedActionRow,
   EmbedContainer,
   EmbedContainerChild,
   EmbedSection,
-} from '@/types/discord';
+} from "@/types/discord";
 
 export const container = (
   components: EmbedContainerChild[],
@@ -32,7 +32,7 @@ export const textDisplay = (content: string): APITextDisplayComponent => ({
 
 export const section = (
   text: [string] | [string, string] | [string, string, string],
-  accessory: EmbedSection['accessory'],
+  accessory: EmbedSection["accessory"],
 ): EmbedSection => ({
   type: ComponentType.Section,
   components: text.map(textDisplay),
@@ -80,7 +80,9 @@ export const linkButton = (
   ...(opts.disabled !== undefined && { disabled: opts.disabled }),
 });
 
-export const actionRow = (buttons: APIButtonComponentWithURL[]): EmbedActionRow => ({
+export const actionRow = (
+  buttons: APIButtonComponentWithURL[],
+): EmbedActionRow => ({
   type: ComponentType.ActionRow,
   components: buttons,
 });

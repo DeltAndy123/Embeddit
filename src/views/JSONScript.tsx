@@ -1,5 +1,5 @@
-import { raw } from 'hono/html';
-import type { DiscordComponentEmbed } from '@/types/discord';
+import { raw } from "hono/html";
+import type { DiscordComponentEmbed } from "@/types/discord";
 
 const escapeJSONForScript = (data: unknown) =>
   JSON.stringify(data)
@@ -15,7 +15,11 @@ export const JSONScript = ({ id, data }: { id: string; data: unknown }) => (
   </script>
 );
 
-export const DiscordComponentEmbedScript = ({ data }: { data: DiscordComponentEmbed }) => (
+export const DiscordComponentEmbedScript = ({
+  data,
+}: {
+  data: DiscordComponentEmbed;
+}) => (
   <script id="discord:component-embed" type="application/json">
     {raw(escapeJSONForScript(data))}
   </script>
