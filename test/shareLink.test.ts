@@ -71,7 +71,7 @@ describe("RedditClient.resolveShareLink", () => {
       redirect("https://evil.example.com/r/sub/comments/abc123/title/"),
     );
 
-    await expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
+    expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
     expect(requests).toHaveLength(1);
@@ -79,14 +79,14 @@ describe("RedditClient.resolveShareLink", () => {
 
   test("rejects a redirect that is not a post", async () => {
     const { client } = setup(() => redirect("https://www.reddit.com/r/sub/"));
-    await expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
+    expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
   });
 
   test("gives up after too many hops", async () => {
     const { client, requests } = setup(() => redirect("https://www.reddit.com/r/sub/s/LOOP"));
-    await expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
+    expect(client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
     expect(requests.length).toBeLessThanOrEqual(3);
@@ -94,7 +94,7 @@ describe("RedditClient.resolveShareLink", () => {
 
   test("maps 404 and other statuses to typed errors", async () => {
     const missing = setup(() => new Response(null, { status: 404 }));
-    await expect(missing.client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
+    expect(missing.client.resolveShareLink("sub", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
 
@@ -107,10 +107,10 @@ describe("RedditClient.resolveShareLink", () => {
   test("invalid input never reaches the network", async () => {
     const { client, requests } = setup(() => redirect(REAL_LOCATION));
 
-    await expect(client.resolveShareLink("a/b", "SHAREID")).rejects.toBeInstanceOf(
+    expect(client.resolveShareLink("a/b", "SHAREID")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
-    await expect(client.resolveShareLink("sub", "../x")).rejects.toBeInstanceOf(
+    expect(client.resolveShareLink("sub", "../x")).rejects.toBeInstanceOf(
       RedditNotFoundError,
     );
     expect(requests).toHaveLength(0);
