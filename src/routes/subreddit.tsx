@@ -1,28 +1,16 @@
 import { Hono } from "hono";
-import * as e from "@/embed/components";
-import { DiscordComponentEmbedScript } from "@/views/JsonScript";
+import { buildSubredditEmbed } from "@/embed/builders/subreddit";
+import type { AppEnv } from "@/services";
+import { EmbedPage } from "@/views/EmbedPage";
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
-app.get("/r/:subreddit", (c) => {
-  const subreddit = c.req.param("subreddit");
+app.get("/r/:subreddit", async (c) => {
+  const subreddit = await c
+    .get("services")
+    .reddit.getSubreddit(c.req.param("subreddit"));
 
-  return c.html(
-    <html lang="en">
-      <head>
-        <DiscordComponentEmbedScript
-          data={{
-            component: e.container([e.textDisplay(`# r/${subreddit}`)], {
-              accentColor: 0xff4500,
-            }),
-          }}
-        />
-      </head>
-      <body>
-        <h1>Subreddit: {subreddit}</h1>
-      </body>
-    </html>,
-  );
+  return c.html(<EmbedPage embed={buildSubredditEmbed(subreddit)} />);
 });
 
 export default app;
