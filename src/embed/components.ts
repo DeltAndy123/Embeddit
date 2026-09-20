@@ -49,16 +49,31 @@ export const thumbnail = (
   ...(opts.spoiler !== undefined && { spoiler: opts.spoiler }),
 });
 
+// Discord allows 10 gallery items across the whole embed (not per gallery)
+export const MAX_GALLERY_ITEMS = 10;
+// Thumbnails have their own separate limit of 10 per embed
+export const MAX_THUMBNAILS = 10;
+// Every component counts toward this, at any depth, including the container itself
+export const MAX_TOTAL_COMPONENTS = 40;
+
 export const mediaGallery = (
   items: { url: string; description?: string; spoiler?: boolean }[],
-): APIMediaGalleryComponent => ({
-  type: ComponentType.MediaGallery,
-  items: items.map(({ url, description, spoiler }) => ({
-    media: { url },
-    ...(description !== undefined && { description }),
-    ...(spoiler !== undefined && { spoiler }),
-  })),
-});
+): APIMediaGalleryComponent => {
+  if (items.length === 0) {
+    throw new RangeError("A media gallery needs at least one item");
+  }
+  return {
+    type: ComponentType.MediaGallery,
+    // A single gallery can never exceed the embed-wide limit, so extras are dropped
+    items: items
+      .slice(0, MAX_GALLERY_ITEMS)
+      .map(({ url, description, spoiler }) => ({
+        media: { url },
+        ...(description !== undefined && { description }),
+        ...(spoiler !== undefined && { spoiler }),
+      })),
+  };
+};
 
 export const separator = (
   opts: { divider?: boolean; spacing?: SeparatorSpacingSize } = {},
