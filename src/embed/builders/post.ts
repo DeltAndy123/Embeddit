@@ -1,6 +1,10 @@
 import { SeparatorSpacingSize } from "discord-api-types/v10";
 import * as e from "@/embed/components";
-import { accentColorOrDefault, smallLine, viewOnRedditButton } from "@/embed/parts";
+import {
+  accentColorOrDefault,
+  smallLine,
+  viewOnRedditButton,
+} from "@/embed/parts";
 import type { DeepReadonly } from "@/lib/cache";
 import { discordTimestamp, TimestampStyle } from "@/lib/format";
 import type { RedditClient } from "@/reddit/client";

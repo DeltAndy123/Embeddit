@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { REDDIT_ORANGE } from "@/embed/color";
 import {
   accentColorOrDefault,
-  smallLine,
   redditUrl,
+  smallLine,
   viewOnRedditButton,
 } from "@/embed/parts";
 
