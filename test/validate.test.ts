@@ -124,6 +124,60 @@ describe("assertValidEmbed", () => {
     ).not.toThrow();
   });
 
+  // One text display adds 65 bytes of JSON around its text, so 2935 characters is
+  // exactly 3000 bytes. Every extra display adds its own structure, so the same
+  // text split in two no longer fits.
+  test("rejects a payload over the size limit, however the text is split", () => {
+    const one = (chars: number) => ({
+      component: container([textDisplay("a".repeat(chars))]),
+    });
+    const two = (chars: number) => ({
+      component: container([
+        textDisplay("a".repeat(chars)),
+        textDisplay("a".repeat(chars)),
+      ]),
+    });
+
+    expect(() => assertValidEmbed(one(2935))).not.toThrow();
+    expect(() => assertValidEmbed(one(2936))).toThrow(EmbedValidationError);
+    expect(() => assertValidEmbed(two(1455))).not.toThrow();
+    expect(() => assertValidEmbed(two(1456))).toThrow(EmbedValidationError);
+  });
+
+  // The limit counts bytes, not characters, and escapes count in full
+  test("counts multi-byte characters by their bytes and escapes in full", () => {
+    // 1466 "é" + "END" is 1469 characters and 3000 bytes, one more "é" is 3002
+    const accentsAtLimit = {
+      component: container([textDisplay(`${"é".repeat(1466)}END`)]),
+    };
+    const accents = {
+      component: container([textDisplay(`${"é".repeat(1467)}END`)]),
+    };
+    // 1000 "<" is 1000 characters but 6000 bytes once escaped for the script tag
+    const brackets = { component: container([textDisplay("<".repeat(1000))]) };
+
+    expect(() => assertValidEmbed(accentsAtLimit)).not.toThrow();
+    expect(() => assertValidEmbed(accents)).toThrow(EmbedValidationError);
+    expect(() => assertValidEmbed(brackets)).toThrow(EmbedValidationError);
+  });
+
+  test("rejects an empty text display, at the top level or inside a section", () => {
+    const topLevel = { component: container([textDisplay("")]) };
+    const inSection = {
+      component: container([
+        section(["ok", ""], thumbnail("https://example.com/t.png")),
+      ]),
+    };
+
+    expect(() => assertValidEmbed(topLevel)).toThrow(EmbedValidationError);
+    expect(() => assertValidEmbed(inSection)).toThrow(EmbedValidationError);
+  });
+
+  test("rejects a text display with only whitespace", () => {
+    const whitespace = { component: container([textDisplay("   \n\t  ")]) };
+    expect(() => assertValidEmbed(whitespace)).toThrow(EmbedValidationError);
+  });
+
   test("matches what Discord reported: 10 sections and 10 galleries is 41 and rejected", () => {
     const sections = Array.from({ length: 10 }, (_, i) => withThumbnail(i));
     const galleries = (count: number) =>

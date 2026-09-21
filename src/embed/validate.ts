@@ -1,9 +1,12 @@
 import { ComponentType } from "discord-api-types/v10";
 import {
+  MAX_EMBED_SIZE,
   MAX_GALLERY_ITEMS,
   MAX_THUMBNAILS,
   MAX_TOTAL_COMPONENTS,
 } from "@/embed/components";
+import { embedSize } from "@/embed/serialize";
+import { textContents } from "@/embed/walk";
 import type { DiscordComponentEmbed } from "@/types/discord";
 
 export class EmbedValidationError extends Error {
@@ -64,5 +67,18 @@ export const assertValidEmbed = (embed: DiscordComponentEmbed): void => {
     throw new EmbedValidationError(
       `Embed has ${thumbnails} thumbnails, the limit is ${MAX_THUMBNAILS}`,
     );
+  }
+
+  const size = embedSize(embed);
+  if (size > MAX_EMBED_SIZE) {
+    throw new EmbedValidationError(
+      `Embed payload is ${size} bytes, the limit is ${MAX_EMBED_SIZE}`,
+    );
+  }
+
+  // Reddit returns "" for unset text (e.g. an image post's selftext), so builders
+  // must leave those out instead of passing them through
+  if (textContents(embed).some((text) => text.trim().length === 0)) {
+    throw new EmbedValidationError("Embed has an empty text display");
   }
 };

@@ -55,6 +55,9 @@ export const MAX_GALLERY_ITEMS = 10;
 export const MAX_THUMBNAILS = 10;
 // Every component counts toward this, at any depth, including the container itself
 export const MAX_TOTAL_COMPONENTS = 40;
+// Size in bytes of the whole JSON payload as emitted in the script tag. Text,
+// URLs, the JSON structure and escapes all count.
+export const MAX_EMBED_SIZE = 3000;
 
 export const mediaGallery = (
   items: { url: string; description?: string; spoiler?: boolean }[],
