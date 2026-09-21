@@ -153,12 +153,18 @@ describe("assertValidEmbed", () => {
     const accents = {
       component: container([textDisplay(`${"é".repeat(1467)}END`)]),
     };
-    // 1000 "<" is 1000 characters but 6000 bytes once escaped for the script tag
-    const brackets = { component: container([textDisplay("<".repeat(1000))]) };
+    // 250 "</script" is 2000 characters but 3250 bytes: each "<" is written as a
+    // six byte escape
+    const escaped = {
+      component: container([textDisplay("</script".repeat(250))]),
+    };
+    // 500 "</" needs no escaping, so it stays at 1000 bytes
+    const plain = { component: container([textDisplay("</".repeat(500))]) };
 
     expect(() => assertValidEmbed(accentsAtLimit)).not.toThrow();
     expect(() => assertValidEmbed(accents)).toThrow(EmbedValidationError);
-    expect(() => assertValidEmbed(brackets)).toThrow(EmbedValidationError);
+    expect(() => assertValidEmbed(escaped)).toThrow(EmbedValidationError);
+    expect(() => assertValidEmbed(plain)).not.toThrow();
   });
 
   test("rejects an empty text display, at the top level or inside a section", () => {

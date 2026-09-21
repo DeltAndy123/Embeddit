@@ -37,8 +37,9 @@ describe("buildFittingEmbed", () => {
   });
 
   test("counts escapes when fitting", () => {
-    // Every quote and newline takes two characters of JSON, `<` takes six
-    for (const char of ['"', "\n", "<"]) {
+    // Every quote and newline takes two characters of JSON, and the `<` in
+    // `</script` takes six
+    for (const char of ['"', "\n", "</script"]) {
       const embed = buildFittingEmbed(char.repeat(5000), build);
 
       expect(embedSize(embed)).toBeLessThanOrEqual(MAX_EMBED_SIZE);
