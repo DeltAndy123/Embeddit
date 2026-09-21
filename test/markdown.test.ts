@@ -3,11 +3,9 @@ import { fixMaskedLinks } from "@/embed/markdown";
 
 describe("fixMaskedLinks", () => {
   test("drops the scheme from a label that repeats the url", () => {
-    expect(
-      fixMaskedLinks(
-        "[https://example.com](https://example.com)",
-      ),
-    ).toBe("[example.com](https://example.com)");
+    expect(fixMaskedLinks("[https://example.com](https://example.com)")).toBe(
+      "[example.com](https://example.com)",
+    );
   });
 
   test("handles a scheme anywhere in the label, in any case", () => {
