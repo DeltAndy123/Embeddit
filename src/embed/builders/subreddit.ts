@@ -17,7 +17,7 @@ export const buildSubredditEmbed = (
   const stats = `**👥 ${formatNumber(subreddit.subscribers)} subscribers**`;
   // Empty text displays are invalid, so an empty description is left out
   const text: [string, string] | [string, string, string] =
-    subreddit.public_description
+    subreddit.public_description.trim().length > 0
       ? [heading, subreddit.public_description, stats]
       : [heading, stats];
 
@@ -37,7 +37,7 @@ export const buildSubredditEmbed = (
           `Created at ${discordTimestamp(subreddit.created_utc, TimestampStyle.ShortDate)}`,
         ),
       ],
-      { accentColor: accentColorOrDefault(subreddit.key_color) },
+      { accentColor: accentColorOrDefault(subreddit.primary_color) },
     ),
   };
 };
