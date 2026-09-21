@@ -2,7 +2,7 @@ import { SeparatorSpacingSize } from "discord-api-types/v10";
 import * as e from "@/embed/components";
 import {
   accentColorOrDefault,
-  footerLine,
+  smallLine,
   viewOnRedditButton,
 } from "@/embed/parts";
 import type { DeepReadonly } from "@/lib/cache";
@@ -32,7 +32,7 @@ export const buildSubredditEmbed = (
           : e.textDisplay(text.join("\n")),
         e.actionRow([viewOnRedditButton(subreddit.url)]),
         e.separator({ divider: true, spacing: SeparatorSpacingSize.Large }),
-        footerLine(
+        smallLine(
           subreddit.display_name_prefixed,
           `Created at ${discordTimestamp(subreddit.created_utc, TimestampStyle.ShortDate)}`,
         ),

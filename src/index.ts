@@ -3,6 +3,7 @@ import { ConfigError, loadConfig } from "@/config";
 import { handleError, handleNotFound } from "@/errors";
 import { logger } from "@/lib/log";
 import { botOnly } from "@/middleware/botOnly";
+import post from "@/routes/post";
 import subreddit from "@/routes/subreddit";
 import test from "@/routes/test";
 import { type AppEnv, createServices } from "@/services";
@@ -22,19 +23,20 @@ const loadConfigOrExit = () => {
 const config = loadConfigOrExit();
 const services = createServices(config);
 
-const app = new Hono<AppEnv>();
+const app = new Hono<AppEnv>({ strict: false });
 
 app.use(async (c, next) => {
   c.set("services", services);
   await next();
 });
 
-app.use("/r/*", botOnly);
+for (const path of ["/r/*", "/u/*", "/user/*"]) app.use(path, botOnly);
 
 app.route("/test", test);
 app.route("/", subreddit);
+app.route("/", post);
 
-app.get("/", (c) => c.text("Hello World!"));
+app.get("/", (c) => c.redirect("https://github.com/DeltAndy123/Embeddit"));
 
 app.onError(handleError);
 app.notFound(handleNotFound);

@@ -11,5 +11,5 @@ export const accentColorOrDefault = (hex: string): number =>
   hexColorToDecimal(hex) ?? REDDIT_ORANGE;
 
 /** Small gray text line, e.g. `-# r/example  •  Created at ...` */
-export const footerLine = (...parts: string[]) =>
+export const smallLine = (...parts: string[]) =>
   textDisplay(`-# ${parts.join("  •  ")}`);

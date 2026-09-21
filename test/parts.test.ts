@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { REDDIT_ORANGE } from "@/embed/color";
 import {
   accentColorOrDefault,
-  footerLine,
+  smallLine,
   redditUrl,
   viewOnRedditButton,
 } from "@/embed/parts";
@@ -26,7 +26,7 @@ describe("embed parts", () => {
   });
 
   test("footerLine joins its parts with a bullet", () => {
-    expect(footerLine("r/example", "Created")).toMatchObject({
+    expect(smallLine("r/example", "Created")).toMatchObject({
       content: "-# r/example  •  Created",
     });
   });

@@ -53,7 +53,7 @@ const logError = (error: unknown) => {
 
 // Only the embed routes are hit by Discord's crawler (botOnly redirects everyone
 // else), so only they get an embed response. Anything else gets a plain status.
-const isEmbedPath = (path: string) => path.startsWith("/r/");
+const isEmbedPath = (path: string) => /^\/(?:r|u|user)\//.test(path);
 
 // Discord doesn't render an embed from a non-2xx response, so errors on embed
 // routes are sent as 200 with an error embed instead.
