@@ -1,9 +1,9 @@
 import { SeparatorSpacingSize } from "discord-api-types/v10";
 import { Hono } from "hono";
+import { buildErrorEmbed } from "@/embed/builders/error";
 import * as e from "@/embed/components";
 import type { DiscordComponentEmbed } from "@/types/discord";
 import { EmbedPage } from "@/views/EmbedPage";
-import { DiscordComponentEmbedScript } from "@/views/JsonScript";
 
 const app = new Hono();
 
@@ -39,76 +39,37 @@ app.get("/", (c) => {
     ),
   };
 
-  return c.html(
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Test</title>
-        <meta property="og:title" content="Fallback title" />
-        <meta property="og:description" content="Fallback description" />
-        <meta property="og:image" content="https://picsum.photos/800/600" />
-        <DiscordComponentEmbedScript data={payload} />
-      </head>
-      <body></body>
-    </html>,
-  );
+  return c.html(<EmbedPage embed={payload} />);
 });
 
 app.get("/limits", (c) => {
   return c.html(
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Test</title>
-        <DiscordComponentEmbedScript
-          data={{
-            component: e.container([
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-              e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
-            ]),
-          }}
-        />
-      </head>
-      <body></body>
-    </html>,
-  );
-});
-
-app.get("/error", (c) => {
-  return c.html(
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Test</title>
-        <meta property="og:title" content="Fallback title" />
-        <meta property="og:description" content="Fallback description" />
-        <meta property="og:image" content="https://picsum.photos/800/600" />
-        <DiscordComponentEmbedScript
-          data={{
-            component: e.container([e.textDisplay("Testing")]),
-          }}
-        />
-      </head>
-      <body></body>
-    </html>,
+    <EmbedPage
+      embed={{
+        component: e.container([
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.section(["test"], e.thumbnail("https://picsum.photos/800/600")),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+          e.mediaGallery([{ url: "https://picsum.photos/800/601" }]),
+        ]),
+      }}
+    />,
   );
 });
 
@@ -154,17 +115,29 @@ app.get("/length/:chars", (c) => {
     e.textDisplay(`${char.repeat(each - 3)}END`),
   );
 
+  return c.html(<EmbedPage embed={{ component: e.container(displays) }} />);
+});
+
+app.get("/custom_emoji", (c) => {
+  const emojiId = c.req.query("id");
+  if (!emojiId) {
+    return c.html(
+      <EmbedPage
+        embed={buildErrorEmbed({
+          title: "Missing 'id' query parameter",
+          message:
+            "Please provide a custom emoji ID in the query string, e.g. /custom_emoji?id=123456789012345678",
+        })}
+      />,
+    );
+  }
+
   return c.html(
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Test</title>
-        <DiscordComponentEmbedScript
-          data={{ component: e.container(displays) }}
-        />
-      </head>
-      <body></body>
-    </html>,
+    <EmbedPage
+      embed={{
+        component: e.container([e.textDisplay(`# <:custom_emoji:${emojiId}>`)]),
+      }}
+    />,
   );
 });
 

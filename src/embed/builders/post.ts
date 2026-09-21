@@ -1,6 +1,5 @@
 import { SeparatorSpacingSize } from "discord-api-types/v10";
 import * as e from "@/embed/components";
-import { separator } from "@/embed/components";
 import { buildFittingEmbed } from "@/embed/fit";
 import { fixMaskedLinks } from "@/embed/markdown";
 import {
@@ -88,13 +87,11 @@ export const buildPostEmbed = async (
         ...postContent,
         ...(bodyText ? [e.textDisplay(bodyText)] : []),
 
-        separator({ divider: false }),
-        e.section(
-          [
-            `**⬆️  ${formatNumber(post.score)}   •   💬  ${formatNumber(post.num_comments)}**`,
-          ],
-          viewOnRedditButton(post.permalink),
+        e.separator({ divider: false }),
+        e.textDisplay(
+          `**⬆️  ${formatNumber(post.score)}   •   💬  ${formatNumber(post.num_comments)}**`,
         ),
+        e.actionRow([viewOnRedditButton(post.permalink)]),
         e.separator({ divider: true, spacing: SeparatorSpacingSize.Large }),
         smallLine(
           `Posted ${discordTimestamp(post.created_utc, TimestampStyle.Relative)}`,
