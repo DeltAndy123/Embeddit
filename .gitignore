@@ -4,3 +4,4 @@ dist/
 data/
 video_output/
 .idea/
+.DS_Store
