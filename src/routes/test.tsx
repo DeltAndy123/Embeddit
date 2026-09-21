@@ -2,6 +2,7 @@ import { SeparatorSpacingSize } from "discord-api-types/v10";
 import { Hono } from "hono";
 import * as e from "@/embed/components";
 import type { DiscordComponentEmbed } from "@/types/discord";
+import { EmbedPage } from "@/views/EmbedPage";
 import { DiscordComponentEmbedScript } from "@/views/JsonScript";
 
 const app = new Hono();
@@ -14,7 +15,9 @@ app.get("/", (c) => {
         e.textDisplay(
           "Body with **bold**, ||spoiler|| and a list:\n- one\n- two",
         ),
-        e.textDisplay("Also a timestamp: <t:1700000000:R>"),
+        e.textDisplay(
+          "Also a timestamp: <t:1700000000:R>\nAnd a [link](https://example.com)",
+        ),
         e.section(["test"], e.thumbnail("https://picsum.photos/800/599")),
         e.mediaGallery([
           { url: "https://picsum.photos/800/600", description: "test image" },
@@ -106,6 +109,26 @@ app.get("/error", (c) => {
       </head>
       <body></body>
     </html>,
+  );
+});
+
+app.get("/gif", (c) => {
+  return c.html(
+    <EmbedPage
+      embed={{
+        component: e.container([
+          e.section(["test"], e.thumbnail("https://i.redd.it/mo0cia5cyrqh1.gif")),
+          e.mediaGallery([
+            {
+              url: "https://i.redd.it/mo0cia5cyrqh1.gif",
+            },
+            {
+              url: "https://i.redd.it/7y48da5cyrqh1.gif",
+            },
+          ]),
+        ]),
+      }}
+    />,
   );
 });
 

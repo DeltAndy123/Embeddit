@@ -15,7 +15,7 @@ interface MediaEmbed {
   height: number;
   scrolling: boolean;
 }
-interface ApiVideo {
+export interface ApiVideo {
   bitrate_kbps: number;
   fallback_url: string;
   has_audio: boolean;
@@ -38,6 +38,15 @@ interface ApiMediaMetadata {
   u: string; // URL
   x: number; // Width
   y: number; // Height
+}
+interface ApiMediaSource {
+  x: number; // Width
+  y: number; // Height
+  /** Still images */
+  u?: string;
+  /** Animated images (`e: "AnimatedImage"`) have these instead of `u` */
+  gif?: string;
+  mp4?: string;
 }
 
 type ModReport = [modName: string, reason: string];
@@ -107,7 +116,8 @@ export interface RedditPostData {
   link_flair_type: string;
   likes: null;
   media: null | {
-    reddit_video: ApiVideo;
+    // Other embeds (e.g. YouTube) have a different shape without this
+    reddit_video?: ApiVideo;
   };
   media_embed: MediaEmbed;
   media_only: boolean;
@@ -127,16 +137,28 @@ export interface RedditPostData {
       /** MIME type */
       m: string;
       p: ApiMediaMetadata[]; // Previews
-      s: ApiMediaMetadata; // Source
+      s: ApiMediaSource; // Source
       id: string;
     };
   };
+  is_gallery?: boolean;
+  gallery_data?: {
+    items: {
+      media_id: string;
+      id: number;
+      is_deleted?: boolean;
+      caption?: string;
+      outbound_url?: string;
+    }[];
+  };
+  crosspost_parent_list?: RedditPostData[];
   over_18: boolean;
   parent_whitelist_status: string;
   permalink: string;
   pinned: boolean;
   post_hint?: string;
-  preview: {
+  /** Absent on text posts */
+  preview?: {
     images: {
       source: ApiImage;
       resolutions: ApiImage[];
@@ -170,8 +192,8 @@ export interface RedditPostData {
   report_reasons: null | string[];
   saved: boolean;
   score: number;
-  secure_media: {
-    reddit_video: ApiVideo;
+  secure_media: null | {
+    reddit_video?: ApiVideo;
   };
   secure_media_embed:
     | MediaEmbed
