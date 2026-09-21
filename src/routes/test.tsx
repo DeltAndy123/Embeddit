@@ -117,7 +117,10 @@ app.get("/gif", (c) => {
     <EmbedPage
       embed={{
         component: e.container([
-          e.section(["test"], e.thumbnail("https://i.redd.it/mo0cia5cyrqh1.gif")),
+          e.section(
+            ["test"],
+            e.thumbnail("https://i.redd.it/mo0cia5cyrqh1.gif"),
+          ),
           e.mediaGallery([
             {
               url: "https://i.redd.it/mo0cia5cyrqh1.gif",
@@ -129,6 +132,39 @@ app.get("/gif", (c) => {
         ]),
       }}
     />,
+  );
+});
+
+app.get("/length/:chars", (c) => {
+  const chars = Number(c.req.param("chars"));
+  const split = Number(c.req.query("split") ?? 1);
+  const char = c.req.query("char") ?? "a";
+  if (!Number.isInteger(chars) || chars < 3 || chars > 100_000) {
+    return c.text("chars must be an integer from 3 to 100000", 400);
+  }
+  if (!Number.isInteger(split) || split < 1 || split > 20) {
+    return c.text("split must be an integer from 1 to 20", 400);
+  }
+  if ([...char].length !== 1) {
+    return c.text("char must be a single character", 400);
+  }
+
+  const each = Math.floor(chars / split);
+  const displays = Array.from({ length: split }, () =>
+    e.textDisplay(`${char.repeat(each - 3)}END`),
+  );
+
+  return c.html(
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <title>Test</title>
+        <DiscordComponentEmbedScript
+          data={{ component: e.container(displays) }}
+        />
+      </head>
+      <body></body>
+    </html>,
   );
 });
 
