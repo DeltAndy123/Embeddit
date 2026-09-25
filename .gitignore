@@ -1,5 +1,7 @@
 node_modules/
 dist/
 .env
-cache.json
+data/
 video_output/
+.idea/
+.DS_Store

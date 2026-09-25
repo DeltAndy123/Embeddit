@@ -1,47 +1,39 @@
-import readline from "node:readline";
-import { OAuthClient } from "../util/oauth";
+import { OAuthClient } from "@/reddit/oauth";
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
+const DEFAULT_USER_AGENT = "script:embeddit-token:2.0.0 (by /u/DeltAndy)";
+
+// Status messages go to stderr so only the token is in stdout
+const say = (message: string) => console.error(message);
+
+const ask = (question: string) => prompt(question)?.trim() ?? "";
+
+say("Reddit OAuth Token Generator\n");
+
+const clientId =
+  process.env.REDDIT_CLIENT_ID || ask("Enter your Reddit client ID:");
+const clientSecret =
+  process.env.REDDIT_CLIENT_SECRET || ask("Enter your Reddit client secret:");
+
+if (!clientId || !clientSecret) {
+  say("Error: Both client ID and secret are required.");
+  process.exit(1);
+}
+
+const client = new OAuthClient({
+  clientId,
+  clientSecret,
+  userAgent: process.env.REDDIT_USER_AGENT || DEFAULT_USER_AGENT,
 });
 
-function prompt(question: string): Promise<string> {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      resolve(answer.trim());
-    });
-  });
+say("\nGenerating access token...");
+
+try {
+  const token = await client.getAccessToken();
+  say("Access token generated successfully:\n");
+  console.log(token);
+} catch (error) {
+  say(
+    `Error generating access token: ${error instanceof Error ? error.message : error}`,
+  );
+  process.exit(1);
 }
-
-async function main() {
-  console.log("Reddit OAuth Token Generator\n");
-
-  const clientId = await prompt("Enter your Reddit client ID: ");
-  const clientSecret = await prompt("Enter your Reddit client secret: ");
-
-  if (!clientId || !clientSecret) {
-    console.error("Error: Both client ID and secret are required.");
-    rl.close();
-    process.exit(1);
-  }
-
-  console.log("\nGenerating access token...\n");
-
-  try {
-    const oauthClient = new OAuthClient(clientId, clientSecret);
-    const accessToken = await oauthClient.getAccessToken();
-
-    console.log(" Access token generated successfully!\n");
-    console.log("Your access token:");
-    console.log(accessToken);
-
-  } catch (error) {
-    console.error("Error generating access token:", error);
-    process.exit(1);
-  } finally {
-    rl.close();
-  }
-}
-
-main();
