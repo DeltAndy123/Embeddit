@@ -4,6 +4,7 @@ import { buildFittingEmbed } from "@/embed/fit";
 import { fixMaskedLinks } from "@/embed/markdown";
 import {
   accentColorOrDefault,
+  EMOJIS,
   smallLine,
   viewOnRedditButton,
 } from "@/embed/parts";
@@ -89,7 +90,7 @@ export const buildPostEmbed = async (
 
         e.separator({ divider: false }),
         e.textDisplay(
-          `**⬆️  ${formatNumber(post.score)}   •   💬  ${formatNumber(post.num_comments)}**`,
+          `**${EMOJIS.UPVOTES}  ${formatNumber(post.score)}   •   ${EMOJIS.COMMENTS}  ${formatNumber(post.num_comments)}**`,
         ),
         e.actionRow([viewOnRedditButton(post.permalink)]),
         e.separator({ divider: true, spacing: SeparatorSpacingSize.Large }),

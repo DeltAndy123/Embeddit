@@ -13,3 +13,8 @@ export const accentColorOrDefault = (hex: string): number =>
 /** Small gray text line, e.g. `-# r/example  •  Created at ...` */
 export const smallLine = (...parts: string[]) =>
   textDisplay(`-# ${parts.join("  •  ")}`);
+
+export const EMOJIS = {
+  UPVOTES: "<:u:1551647045155291238>",
+  COMMENTS: "<:c:1551647065585750123>",
+} as const;
