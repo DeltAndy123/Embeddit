@@ -61,8 +61,6 @@ const errorEmbedResponse = (
   c: Parameters<ErrorHandler<AppEnv>>[1],
   options: ErrorEmbedOptions,
 ) => {
-  // Discord may cache this; ask it not to (honoring this is untested)
-  c.header("Cache-Control", "no-store");
   return c.html(<EmbedPage embed={buildErrorEmbed(options)} />);
 };
 
