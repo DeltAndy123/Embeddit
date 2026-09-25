@@ -34,6 +34,7 @@ const read = (env: Env, key: string) => env[key]?.trim() || undefined;
 
 const parseServerBase = (
   value: string | undefined,
+  forceAllowHttp: boolean,
   problems: string[],
 ): string | undefined => {
   if (!value) {
@@ -49,7 +50,10 @@ const parseServerBase = (
     return undefined;
   }
 
-  if (url.protocol !== "https:") {
+  if (
+    url.protocol !== "https:" &&
+    !(forceAllowHttp && url.protocol === "http:")
+  ) {
     problems.push(
       "SERVER_BASE must start with https:// so Discord can fetch it",
     );
@@ -78,7 +82,15 @@ const parsePort = (value: string | undefined, problems: string[]): number => {
 export const loadConfig = (env: Env = process.env): Config => {
   const problems: string[] = [];
 
-  const serverBase = parseServerBase(read(env, "SERVER_BASE"), problems);
+  const forceAllowHttp = ["1", "true"].includes(
+    (read(env, "FORCE_ALLOW_HTTP") ?? "0").toLowerCase(),
+  );
+
+  const serverBase = parseServerBase(
+    read(env, "SERVER_BASE"),
+    forceAllowHttp,
+    problems,
+  );
   const port = parsePort(read(env, "PORT"), problems);
   const clientId = read(env, "REDDIT_CLIENT_ID");
   const clientSecret = read(env, "REDDIT_CLIENT_SECRET");
